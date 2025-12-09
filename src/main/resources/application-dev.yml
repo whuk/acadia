@@ -1,0 +1,9 @@
+# Development profile configuration
+server:
+  port: 8080
+
+logging:
+  level:
+    root: INFO
+    me.ryan.acadia: INFO
+    org.springframework.cloud.gateway: DEBUG

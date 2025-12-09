@@ -1,0 +1,8 @@
+# Default profile configuration
+server:
+  port: 8080
+
+logging:
+  level:
+    root: INFO
+    me.ryan.acadia: DEBUG

@@ -1,0 +1,82 @@
+# API Gateway 구현 계획서 (TDD)
+
+## 프로젝트 정보
+- **프로젝트명**: Acadia
+- **기본 패키지**: me.ryan.acadia
+- **Java 버전**: 21
+- **Kotlin 버전**: 2.2
+- **Spring Boot**: 4.x
+- **Spring Cloud Gateway**: 2025.x
+
+## 개요
+Spring Cloud Gateway 기반 API Gateway MVP 구현을 위한 TDD 테스트 계획
+
+## Phase 1: 프로젝트 설정 및 기본 구조
+- [x] 1.1 Spring Boot 애플리케이션이 정상 기동된다
+- [x] 1.2 Actuator health endpoint가 200을 반환한다
+- [x] 1.3 WebFlux 기반으로 동작한다 (Netty 서버)
+
+## Phase 2: 기본 라우팅
+- [ ] 2.1 /api/users/** 요청이 user-service로 라우팅된다
+- [ ] 2.2 /api/orders/** 요청이 order-service로 라우팅된다
+- [ ] 2.3 정의되지 않은 경로는 404를 반환한다
+- [ ] 2.4 라우팅 시 원본 HTTP 메서드가 유지된다
+- [ ] 2.5 라우팅 시 원본 헤더가 전달된다
+- [ ] 2.6 라우팅 시 원본 바디가 전달된다
+
+## Phase 3: 인증 (JWT)
+- [ ] 3.1 Authorization 헤더 없는 요청은 401을 반환한다
+- [ ] 3.2 잘못된 JWT 토큰은 401을 반환한다
+- [ ] 3.3 만료된 JWT 토큰은 401을 반환한다
+- [ ] 3.4 유효한 JWT 토큰은 라우팅이 진행된다
+- [ ] 3.5 JWT에서 추출한 사용자 ID가 X-User-Id 헤더로 전달된다
+- [ ] 3.6 JWT에서 추출한 역할이 X-User-Roles 헤더로 전달된다
+- [ ] 3.7 공개 경로(/api/public/**)는 인증 없이 접근 가능하다
+
+## Phase 4: 장애 대응 (Resilience)
+- [ ] 4.1 백엔드 응답이 3초 초과 시 504를 반환한다
+- [ ] 4.2 백엔드 연결이 1초 초과 시 504를 반환한다
+- [ ] 4.3 백엔드 실패 시 최대 3회 재시도한다
+- [ ] 4.4 실패율 50% 초과 시 Circuit Breaker가 열린다
+- [ ] 4.5 Circuit Breaker 열린 상태에서 503을 반환한다
+- [ ] 4.6 백엔드 5xx 오류는 502로 변환된다
+
+## Phase 5: 로깅 & 트레이싱
+- [ ] 5.1 모든 요청에 X-Request-Id가 생성된다
+- [ ] 5.2 클라이언트가 보낸 X-Request-Id가 있으면 유지된다
+- [ ] 5.3 요청 로그가 JSON 형식으로 기록된다
+- [ ] 5.4 응답 로그가 JSON 형식으로 기록된다
+- [ ] 5.5 TraceId가 백엔드로 전달된다
+- [ ] 5.6 SpanId가 백엔드로 전달된다
+
+## Phase 6: CORS & 보안
+- [ ] 6.1 허용된 Origin에서 CORS preflight 요청이 성공한다
+- [ ] 6.2 허용되지 않은 Origin은 CORS 오류를 반환한다
+- [ ] 6.3 허용된 HTTP 메서드만 CORS 응답에 포함된다
+- [ ] 6.4 credentials가 허용된다
+
+## Phase 7: Prometheus 메트릭
+- [ ] 7.1 /actuator/prometheus 엔드포인트가 메트릭을 반환한다
+- [ ] 7.2 요청 수 메트릭이 기록된다
+- [ ] 7.3 응답 시간 메트릭이 기록된다
+- [ ] 7.4 Circuit Breaker 상태 메트릭이 기록된다
+
+## Phase 8: Rate Limiting (Optional)
+- [ ] 8.1 초당 10 요청 초과 시 429를 반환한다
+- [ ] 8.2 버스트 20 요청까지 허용된다
+- [ ] 8.3 Rate Limit 헤더가 응답에 포함된다
+
+---
+
+## 진행 상태
+- 총 테스트: 35개
+- 완료: 3개
+- 진행률: 8.6%
+
+## 사용법
+```
+/go          # 다음 미완료 테스트 구현
+/test        # 전체 테스트 실행
+/tidy        # 리팩토링
+/commit      # 커밋 생성
+```

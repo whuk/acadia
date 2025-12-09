@@ -1,0 +1,17 @@
+spring:
+  application:
+    name: acadia
+  main:
+    web-application-type: reactive
+  output:
+    ansi:
+      enabled: always
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: always

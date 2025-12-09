@@ -1,0 +1,8 @@
+# Production profile configuration
+server:
+  port: 8080
+
+logging:
+  level:
+    root: WARN
+    me.ryan.acadia: INFO
