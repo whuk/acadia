@@ -10,18 +10,20 @@
 
 ## 테스트 목록
 
-### 2.1 /api/users/** 요청이 user-service로 라우팅된다
+### 2.1 /api/users/** 요청이 user-service로 라우팅된다 ✅
 ```kotlin
 @Test
 fun `users 경로가 user-service로 라우팅된다`() {
-    // WireMock으로 user-service 모킹
-    stubFor(get(urlPathMatching("/users/.*"))
-        .willReturn(ok().withBody("""{"id": 1}""")))
+    wireMock.stubFor(
+        get(urlPathMatching("/users/.*"))
+            .willReturn(ok().withBody("""{"id": 1}"""))
+    )
 
     webTestClient.get().uri("/api/users/1")
         .exchange()
         .expectStatus().isOk
-        .expectBody().jsonPath("$.id").isEqualTo(1)
+        .expectBody()
+        .jsonPath("$.id").isEqualTo(1)
 }
 ```
 
@@ -97,44 +99,57 @@ fun `요청 바디가 백엔드로 전달된다`() {
 
 ## 구현 가이드
 
-### application.yml 라우팅 설정
-```yaml
-spring:
-  cloud:
-    gateway:
-      routes:
-        - id: user-service
-          uri: http://localhost:8081
-          predicates:
-            - Path=/api/users/**
-          filters:
-            - StripPrefix=1
-
-        - id: order-service
-          uri: http://localhost:8082
-          predicates:
-            - Path=/api/orders/**
-          filters:
-            - StripPrefix=1
-```
-
-### 테스트 설정 (WireMock)
+### 프로그래매틱 라우팅 설정 (GatewayConfig.kt)
 ```kotlin
-@SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
-@AutoConfigureWireMock(port = 0)
-class RoutingTest {
-    @Autowired
-    lateinit var webTestClient: WebTestClient
+@Configuration
+class GatewayConfig {
 
-    @DynamicPropertySource
-    @JvmStatic
-    fun configureProperties(registry: DynamicPropertyRegistry) {
-        registry.add("user-service.url") { wireMockServer.baseUrl() }
+    @Value("\${user-service.url:http://localhost:8081}")
+    private lateinit var userServiceUrl: String
+
+    @Bean
+    fun customRouteLocator(builder: RouteLocatorBuilder): RouteLocator {
+        return builder.routes()
+            .route("user-service") { r ->
+                r.path("/api/users/**")
+                    .filters { f -> f.stripPrefix(1) }
+                    .uri(userServiceUrl)
+            }
+            .build()
     }
 }
 ```
 
+### 테스트 설정 (WireMock JUnit 5 Extension)
+```kotlin
+@SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
+@AutoConfigureWebTestClient
+class UserServiceRoutingTest {
+
+    companion object {
+        @JvmField
+        @RegisterExtension
+        val wireMock: WireMockExtension = WireMockExtension.newInstance().build()
+
+        @JvmStatic
+        @DynamicPropertySource
+        fun configureProperties(registry: DynamicPropertyRegistry) {
+            registry.add("user-service.url") { wireMock.baseUrl() }
+        }
+    }
+
+    @Autowired
+    lateinit var webTestClient: WebTestClient
+}
+```
+
+### 의존성 (build.gradle.kts)
+```kotlin
+testImplementation("org.wiremock:wiremock-standalone:3.10.0")
+```
+
 ## 완료 조건
+- [x] 2.1 /api/users/** 라우팅 테스트 통과
 - [ ] 모든 라우팅 테스트 통과
 - [ ] 경로별 서비스 매핑 정상 동작
 - [ ] 메서드/헤더/바디 무손실 전달
