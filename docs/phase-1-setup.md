@@ -68,12 +68,25 @@ java {
     }
 }
 
+repositories {
+    mavenCentral()
+}
+
 dependencies {
     implementation("org.springframework.cloud:spring-cloud-starter-gateway-server-webflux")
     implementation("org.springframework.boot:spring-boot-starter-actuator")
+    implementation("org.jetbrains.kotlin:kotlin-reflect")
 
     testImplementation("org.springframework.boot:spring-boot-starter-test")
+    testImplementation("org.springframework.boot:spring-boot-starter-webflux")
+    testImplementation("org.springframework.boot:spring-boot-webtestclient")
     testImplementation("io.projectreactor:reactor-test")
+    testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+}
+
+configurations.all {
+    exclude(group = "org.springframework.boot", module = "spring-boot-starter-web")
 }
 
 dependencyManagement {
@@ -81,28 +94,40 @@ dependencyManagement {
         mavenBom("org.springframework.cloud:spring-cloud-dependencies:2025.1.0")
     }
 }
+
+kotlin {
+    compilerOptions {
+        freeCompilerArgs.addAll("-Xjsr305=strict")
+    }
+}
+
+tasks.withType<Test> {
+    useJUnitPlatform()
+}
 ```
 
 ### application.yml
 ```yaml
-server:
-  port: 8080
-
 spring:
   application:
     name: acadia
+  main:
+    web-application-type: reactive
+  output:
+    ansi:
+      enabled: always
 
 management:
   endpoints:
     web:
       exposure:
-        include: health, info, prometheus
+        include: health
   endpoint:
     health:
       show-details: always
 ```
 
 ## 완료 조건
-- [ ] 모든 테스트 통과
-- [ ] 애플리케이션 기동 시간 < 5초
-- [ ] Actuator 엔드포인트 접근 가능
+- [x] 모든 테스트 통과
+- [x] 애플리케이션 기동 시간 < 5초
+- [x] Actuator 엔드포인트 접근 가능
