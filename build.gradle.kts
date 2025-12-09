@@ -28,6 +28,7 @@ dependencies {
     testImplementation("org.springframework.boot:spring-boot-webtestclient")
     testImplementation("io.projectreactor:reactor-test")
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
+    testImplementation("org.wiremock:wiremock-standalone:3.10.0")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
