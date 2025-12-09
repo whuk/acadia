@@ -17,7 +17,7 @@ Spring Cloud Gateway 기반 API Gateway MVP 구현을 위한 TDD 테스트 계�
 - [x] 1.3 WebFlux 기반으로 동작한다 (Netty 서버)
 
 ## Phase 2: 기본 라우팅
-- [ ] 2.1 /api/users/** 요청이 user-service로 라우팅된다
+- [x] 2.1 /api/users/** 요청이 user-service로 라우팅된다
 - [ ] 2.2 /api/orders/** 요청이 order-service로 라우팅된다
 - [ ] 2.3 정의되지 않은 경로는 404를 반환한다
 - [ ] 2.4 라우팅 시 원본 HTTP 메서드가 유지된다
@@ -70,8 +70,8 @@ Spring Cloud Gateway 기반 API Gateway MVP 구현을 위한 TDD 테스트 계�
 
 ## 진행 상태
 - 총 테스트: 35개
-- 완료: 3개
-- 진행률: 8.6%
+- 완료: 4개
+- 진행률: 11.4%
 
 ## 사용법
 ```
