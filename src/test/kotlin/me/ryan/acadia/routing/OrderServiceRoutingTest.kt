@@ -26,7 +26,9 @@ class OrderServiceRoutingTest {
         @JvmStatic
         @DynamicPropertySource
         fun configureProperties(registry: DynamicPropertyRegistry) {
-            registry.add("order-service.url") { wireMock.baseUrl() }
+            registry.add("gateway.services[0].name") { "order-service" }
+            registry.add("gateway.services[0].path") { "/api/orders/**" }
+            registry.add("gateway.services[0].url") { wireMock.baseUrl() }
         }
     }
 
