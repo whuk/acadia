@@ -24,3 +24,9 @@ management:
 logging:
   level:
     org.springframework.cloud.gateway: DEBUG
+
+user-service:
+  url: http://localhost:8081
+
+order-service:
+  url: http://localhost:8082
