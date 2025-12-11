@@ -1,4 +1,4 @@
-package me.ryan.acadia
+package me.ryan.acadia.routing
 
 import com.github.tomakehurst.wiremock.client.WireMock.containing
 import com.github.tomakehurst.wiremock.client.WireMock.equalTo
@@ -45,6 +45,7 @@ class HeaderForwardingTest {
         webTestClient
             .get()
             .uri("/api/users/1")
+            .header("Authorization", "Bearer test-token")
             .header("X-Custom-Header", "custom-value")
             .exchange()
             .expectStatus()
@@ -66,6 +67,7 @@ class HeaderForwardingTest {
         webTestClient
             .get()
             .uri("/api/users/1")
+            .header("Authorization", "Bearer test-token")
             .header("Accept", "application/json")
             .exchange()
             .expectStatus()
@@ -87,6 +89,7 @@ class HeaderForwardingTest {
         webTestClient
             .get()
             .uri("/api/users/1")
+            .header("Authorization", "Bearer test-token")
             .header("Content-Type", "application/json")
             .exchange()
             .expectStatus()
@@ -129,6 +132,7 @@ class HeaderForwardingTest {
         webTestClient
             .get()
             .uri("/api/users/1")
+            .header("Authorization", "Bearer test-token")
             .header("X-Request-Id", "req-123")
             .header("X-Correlation-Id", "corr-456")
             .header("Accept-Language", "ko-KR")

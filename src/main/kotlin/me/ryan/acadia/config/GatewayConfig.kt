@@ -1,4 +1,4 @@
-package me.ryan.acadia
+package me.ryan.acadia.config
 
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.cloud.gateway.route.RouteLocator

@@ -1,8 +1,10 @@
-package me.ryan.acadia
+package me.ryan.acadia.routing
 
-import com.github.tomakehurst.wiremock.client.WireMock.get
+import com.github.tomakehurst.wiremock.client.WireMock.equalToJson
 import com.github.tomakehurst.wiremock.client.WireMock.ok
-import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
+import com.github.tomakehurst.wiremock.client.WireMock.post
+import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
+import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.RegisterExtension
@@ -10,13 +12,14 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment
 import org.springframework.boot.webtestclient.autoconfigure.AutoConfigureWebTestClient
+import org.springframework.http.MediaType
 import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
 import org.springframework.test.web.reactive.server.WebTestClient
 
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
 @AutoConfigureWebTestClient
-class OrderServiceRoutingTest {
+class BodyForwardingTest {
     companion object {
         @JvmField
         @RegisterExtension
@@ -25,7 +28,7 @@ class OrderServiceRoutingTest {
         @JvmStatic
         @DynamicPropertySource
         fun configureProperties(registry: DynamicPropertyRegistry) {
-            registry.add("order-service.url") { wireMock.baseUrl() }
+            registry.add("user-service.url") { wireMock.baseUrl() }
         }
     }
 
@@ -33,20 +36,27 @@ class OrderServiceRoutingTest {
     lateinit var webTestClient: WebTestClient
 
     @Test
-    fun `orders 경로가 order-service로 라우팅된다`() {
+    fun `요청 바디가 라우팅 시 전달된다`() {
+        val requestBody = """{"name": "test", "email": "test@example.com"}"""
+
         wireMock.stubFor(
-            get(urlPathMatching("/orders/.*"))
-                .willReturn(ok().withBody("""{"orderId": 123}""")),
+            post(urlPathEqualTo("/users"))
+                .willReturn(ok().withBody("""{"id": 1, "name": "test"}""")),
         )
 
         webTestClient
-            .get()
-            .uri("/api/orders/123")
+            .post()
+            .uri("/api/users")
+            .header("Authorization", "Bearer test-token")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(requestBody)
             .exchange()
             .expectStatus()
             .isOk
-            .expectBody()
-            .jsonPath("$.orderId")
-            .isEqualTo(123)
+
+        wireMock.verify(
+            postRequestedFor(urlPathEqualTo("/users"))
+                .withRequestBody(equalToJson(requestBody)),
+        )
     }
 }

@@ -1,4 +1,4 @@
-package me.ryan.acadia
+package me.ryan.acadia.routing
 
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.ok
@@ -42,6 +42,7 @@ class UserServiceRoutingTest {
         webTestClient
             .get()
             .uri("/api/users/1")
+            .header("Authorization", "Bearer test-token")
             .exchange()
             .expectStatus()
             .isOk

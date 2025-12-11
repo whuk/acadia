@@ -26,7 +26,7 @@ Spring Cloud Gateway 기반 API Gateway MVP 구현을 위한 TDD 테스트 계�
 - [x] 2.6 라우팅 시 원본 바디가 전달된다
 
 ## Phase 3: 인증 (JWT)
-- [ ] 3.1 Authorization 헤더 없는 요청은 401을 반환한다
+- [x] 3.1 Authorization 헤더 없는 요청은 401을 반환한다
 - [ ] 3.2 잘못된 JWT 토큰은 401을 반환한다
 - [ ] 3.3 만료된 JWT 토큰은 401을 반환한다
 - [ ] 3.4 유효한 JWT 토큰은 라우팅이 진행된다
@@ -71,8 +71,8 @@ Spring Cloud Gateway 기반 API Gateway MVP 구현을 위한 TDD 테스트 계�
 
 ## 진행 상태
 - 총 테스트: 36개
-- 완료: 10개
-- 진행률: 27.8%
+- 완료: 11개
+- 진행률: 30.6%
 
 ## 사용법
 ```
