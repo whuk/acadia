@@ -16,7 +16,7 @@ import org.springframework.test.web.reactive.server.WebTestClient
 
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
 @AutoConfigureWebTestClient
-class UserServiceRoutingTest {
+class OrderServiceRoutingTest {
     companion object {
         @JvmField
         @RegisterExtension
@@ -25,7 +25,7 @@ class UserServiceRoutingTest {
         @JvmStatic
         @DynamicPropertySource
         fun configureProperties(registry: DynamicPropertyRegistry) {
-            registry.add("user-service.url") { wireMock.baseUrl() }
+            registry.add("order-service.url") { wireMock.baseUrl() }
         }
     }
 
@@ -33,20 +33,20 @@ class UserServiceRoutingTest {
     lateinit var webTestClient: WebTestClient
 
     @Test
-    fun `users 경로가 user-service로 라우팅된다`() {
+    fun `orders 경로가 order-service로 라우팅된다`() {
         wireMock.stubFor(
-            get(urlPathMatching("/users/.*"))
-                .willReturn(ok().withBody("""{"id": 1}""")),
+            get(urlPathMatching("/orders/.*"))
+                .willReturn(ok().withBody("""{"orderId": 123}""")),
         )
 
         webTestClient
             .get()
-            .uri("/api/users/1")
+            .uri("/api/orders/123")
             .exchange()
             .expectStatus()
             .isOk
             .expectBody()
-            .jsonPath("$.id")
-            .isEqualTo(1)
+            .jsonPath("$.orderId")
+            .isEqualTo(123)
     }
 }

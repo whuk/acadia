@@ -10,16 +10,19 @@ import org.springframework.test.web.reactive.server.WebTestClient
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
 @AutoConfigureWebTestClient
 class ActuatorHealthTest {
-
     @Autowired
     lateinit var webTestClient: WebTestClient
 
     @Test
     fun `health 엔드포인트가 200과 UP 상태를 반환한다`() {
-        webTestClient.get().uri("/actuator/health")
+        webTestClient
+            .get()
+            .uri("/actuator/health")
             .exchange()
-            .expectStatus().isOk
+            .expectStatus()
+            .isOk
             .expectBody()
-            .jsonPath("$.status").isEqualTo("UP")
+            .jsonPath("$.status")
+            .isEqualTo("UP")
     }
 }

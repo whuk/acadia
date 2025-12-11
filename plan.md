@@ -15,10 +15,11 @@ Spring Cloud Gateway 기반 API Gateway MVP 구현을 위한 TDD 테스트 계�
 - [x] 1.1 Spring Boot 애플리케이션이 정상 기동된다
 - [x] 1.2 Actuator health endpoint가 200을 반환한다
 - [x] 1.3 WebFlux 기반으로 동작한다 (Netty 서버)
+- [x] 1.4 Kotlin lint(ktlint)가 설정되어 코드 스타일을 검사한다
 
 ## Phase 2: 기본 라우팅
 - [x] 2.1 /api/users/** 요청이 user-service로 라우팅된다
-- [ ] 2.2 /api/orders/** 요청이 order-service로 라우팅된다
+- [x] 2.2 /api/orders/** 요청이 order-service로 라우팅된다
 - [ ] 2.3 정의되지 않은 경로는 404를 반환한다
 - [ ] 2.4 라우팅 시 원본 HTTP 메서드가 유지된다
 - [ ] 2.5 라우팅 시 원본 헤더가 전달된다
@@ -69,9 +70,9 @@ Spring Cloud Gateway 기반 API Gateway MVP 구현을 위한 TDD 테스트 계�
 ---
 
 ## 진행 상태
-- 총 테스트: 35개
-- 완료: 4개
-- 진행률: 11.4%
+- 총 테스트: 36개
+- 완료: 6개
+- 진행률: 16.7%
 
 ## 사용법
 ```
