@@ -44,3 +44,13 @@ gateway:
       - INTERNAL_SERVER_ERROR
     methods:
       - GET
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      gatewayCircuitBreaker:
+        sliding-window-size: 10
+        minimum-number-of-calls: 5
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 60s
+        permitted-number-of-calls-in-half-open-state: 3

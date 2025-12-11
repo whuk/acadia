@@ -6,12 +6,17 @@ import org.springframework.cloud.gateway.route.builder.GatewayFilterSpec
 import org.springframework.cloud.gateway.route.builder.RouteLocatorBuilder
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.http.HttpStatus
 
 @Configuration
 @EnableConfigurationProperties(GatewayProperties::class)
 class GatewayConfig(
     private val props: GatewayProperties,
 ) {
+    companion object {
+        const val CIRCUIT_BREAKER_NAME = "gatewayCircuitBreaker"
+    }
+
     @Bean
     fun customRouteLocator(builder: RouteLocatorBuilder): RouteLocator {
         var routes = builder.routes()
@@ -44,7 +49,10 @@ class GatewayConfig(
         this
             .stripPrefix(stripPrefix)
             .preserveHostHeader()
-            .retry { config ->
+            .circuitBreaker { config ->
+                config.setName(CIRCUIT_BREAKER_NAME)
+                config.addStatusCode(HttpStatus.INTERNAL_SERVER_ERROR.name)
+            }.retry { config ->
                 config.setRetries(props.retry.retries)
                 config.setStatuses(*props.retry.statuses.toTypedArray())
                 config.setMethods(*props.retry.methods.toTypedArray())
