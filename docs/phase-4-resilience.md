@@ -216,7 +216,7 @@ class GlobalErrorHandler : ErrorWebExceptionHandler {
 ```
 
 ## 완료 조건
-- [ ] 모든 Resilience 테스트 통과
-- [ ] Circuit Breaker 상태 전이 정상 동작
-- [ ] 타임아웃 및 재시도 정상 동작
-- [ ] 에러 응답 형식 일관성 유지
+- [x] 모든 Resilience 테스트 통과
+- [x] Circuit Breaker 상태 전이 정상 동작
+- [x] 타임아웃 및 재시도 정상 동작
+- [x] 에러 응답 형식 일관성 유지
