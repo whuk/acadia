@@ -27,6 +27,8 @@ class JwtAuthenticationFilter(
     companion object {
         private const val BEARER_PREFIX = "Bearer "
         private const val X_USER_ID_HEADER = "X-User-Id"
+        private const val X_USER_ROLES_HEADER = "X-User-Roles"
+        private const val ROLES_CLAIM = "roles"
     }
 
     override fun filter(
@@ -41,11 +43,16 @@ class JwtAuthenticationFilter(
 
         val claims = parseToken(token) ?: return unauthorized(exchange)
 
+        val roles = extractRoles(claims)
+
         val mutatedExchange =
             exchange
                 .mutate()
                 .request { request ->
                     request.header(X_USER_ID_HEADER, claims.subject)
+                    if (roles.isNotEmpty()) {
+                        request.header(X_USER_ROLES_HEADER, roles.joinToString(","))
+                    }
                 }.build()
 
         return chain.filter(mutatedExchange)
@@ -55,6 +62,14 @@ class JwtAuthenticationFilter(
         authHeader
             .takeIf { it.startsWith(BEARER_PREFIX) }
             ?.removePrefix(BEARER_PREFIX)
+
+    private fun extractRoles(claims: Claims): List<String> {
+        val roles = claims[ROLES_CLAIM] ?: return emptyList()
+        return when (roles) {
+            is List<*> -> roles.filterIsInstance<String>()
+            else -> emptyList()
+        }
+    }
 
     private fun parseToken(token: String): Claims? =
         try {
