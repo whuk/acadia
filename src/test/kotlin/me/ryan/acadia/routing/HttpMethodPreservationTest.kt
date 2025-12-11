@@ -1,4 +1,4 @@
-package me.ryan.acadia
+package me.ryan.acadia.routing
 
 import com.github.tomakehurst.wiremock.client.WireMock.delete
 import com.github.tomakehurst.wiremock.client.WireMock.ok
@@ -44,6 +44,7 @@ class HttpMethodPreservationTest {
         webTestClient
             .post()
             .uri("/api/users")
+            .header("Authorization", "Bearer test-token")
             .exchange()
             .expectStatus()
             .isOk
@@ -62,6 +63,7 @@ class HttpMethodPreservationTest {
         webTestClient
             .put()
             .uri("/api/users/1")
+            .header("Authorization", "Bearer test-token")
             .exchange()
             .expectStatus()
             .isOk
@@ -80,6 +82,7 @@ class HttpMethodPreservationTest {
         webTestClient
             .delete()
             .uri("/api/users/1")
+            .header("Authorization", "Bearer test-token")
             .exchange()
             .expectStatus()
             .isOk

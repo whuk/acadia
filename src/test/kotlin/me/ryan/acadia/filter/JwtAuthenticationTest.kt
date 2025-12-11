@@ -1,4 +1,4 @@
-package me.ryan.acadia
+package me.ryan.acadia.filter
 
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
@@ -9,17 +9,17 @@ import org.springframework.test.web.reactive.server.WebTestClient
 
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
 @AutoConfigureWebTestClient
-class UndefinedRouteTest {
+class JwtAuthenticationTest {
     @Autowired
     lateinit var webTestClient: WebTestClient
 
     @Test
-    fun `정의되지 않은 경로는 404를 반환한다`() {
+    fun `Authorization 헤더 없는 요청은 401을 반환한다`() {
         webTestClient
             .get()
-            .uri("/api/undefined/path")
+            .uri("/api/users/1")
             .exchange()
             .expectStatus()
-            .isNotFound
+            .isUnauthorized
     }
 }
