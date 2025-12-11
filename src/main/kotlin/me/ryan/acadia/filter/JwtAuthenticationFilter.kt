@@ -4,6 +4,7 @@ import io.jsonwebtoken.Claims
 import io.jsonwebtoken.JwtException
 import io.jsonwebtoken.Jwts
 import io.jsonwebtoken.security.Keys
+import me.ryan.acadia.common.GatewayHeaders
 import me.ryan.acadia.config.JwtProperties
 import org.springframework.cloud.gateway.filter.GatewayFilterChain
 import org.springframework.cloud.gateway.filter.GlobalFilter
@@ -26,8 +27,6 @@ class JwtAuthenticationFilter(
 
     companion object {
         private const val BEARER_PREFIX = "Bearer "
-        private const val X_USER_ID_HEADER = "X-User-Id"
-        private const val X_USER_ROLES_HEADER = "X-User-Roles"
         private const val ROLES_CLAIM = "roles"
         private const val PUBLIC_PATH_PREFIX = "/api/public/"
     }
@@ -55,9 +54,9 @@ class JwtAuthenticationFilter(
             exchange
                 .mutate()
                 .request { request ->
-                    request.header(X_USER_ID_HEADER, claims.subject)
+                    request.header(GatewayHeaders.X_USER_ID, claims.subject)
                     if (roles.isNotEmpty()) {
-                        request.header(X_USER_ROLES_HEADER, roles.joinToString(","))
+                        request.header(GatewayHeaders.X_USER_ROLES, roles.joinToString(","))
                     }
                 }.build()
 
