@@ -6,6 +6,12 @@ spring:
   output:
     ansi:
       enabled: always
+  cloud:
+    gateway:
+      server:
+        webflux:
+          httpclient:
+            response-timeout: 3s
 management:
   endpoints:
     web:
