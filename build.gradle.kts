@@ -3,6 +3,7 @@ plugins {
     kotlin("plugin.spring") version "2.2.0"
     id("org.springframework.boot") version "4.0.0"
     id("io.spring.dependency-management") version "1.1.7"
+    id("org.jlleitschuh.gradle.ktlint") version "12.1.2"
 }
 
 group = "me.ryan"
@@ -50,4 +51,8 @@ kotlin {
 
 tasks.withType<Test> {
     useJUnitPlatform()
+}
+
+ktlint {
+    version.set("1.5.0")
 }

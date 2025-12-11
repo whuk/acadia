@@ -10,7 +10,6 @@ import kotlin.test.assertTrue
 
 @SpringBootTest
 class NettyServerTest {
-
     @Autowired
     lateinit var applicationContext: ApplicationContext
 
