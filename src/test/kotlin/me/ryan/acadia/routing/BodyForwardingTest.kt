@@ -6,6 +6,7 @@ import com.github.tomakehurst.wiremock.client.WireMock.post
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension
+import me.ryan.acadia.support.JwtTestSupport
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.RegisterExtension
 import org.springframework.beans.factory.annotation.Autowired
@@ -47,7 +48,7 @@ class BodyForwardingTest {
         webTestClient
             .post()
             .uri("/api/users")
-            .header("Authorization", "Bearer test-token")
+            .header("Authorization", JwtTestSupport.validAuthHeader())
             .contentType(MediaType.APPLICATION_JSON)
             .bodyValue(requestBody)
             .exchange()

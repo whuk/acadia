@@ -22,4 +22,15 @@ class JwtAuthenticationTest {
             .expectStatus()
             .isUnauthorized
     }
+
+    @Test
+    fun `잘못된 JWT 토큰은 401을 반환한다`() {
+        webTestClient
+            .get()
+            .uri("/api/users/1")
+            .header("Authorization", "Bearer invalid-token")
+            .exchange()
+            .expectStatus()
+            .isUnauthorized
+    }
 }

@@ -6,6 +6,7 @@ import com.github.tomakehurst.wiremock.client.WireMock.post
 import com.github.tomakehurst.wiremock.client.WireMock.put
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension
+import me.ryan.acadia.support.JwtTestSupport
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.RegisterExtension
 import org.springframework.beans.factory.annotation.Autowired
@@ -44,7 +45,7 @@ class HttpMethodPreservationTest {
         webTestClient
             .post()
             .uri("/api/users")
-            .header("Authorization", "Bearer test-token")
+            .header("Authorization", JwtTestSupport.validAuthHeader())
             .exchange()
             .expectStatus()
             .isOk
@@ -63,7 +64,7 @@ class HttpMethodPreservationTest {
         webTestClient
             .put()
             .uri("/api/users/1")
-            .header("Authorization", "Bearer test-token")
+            .header("Authorization", JwtTestSupport.validAuthHeader())
             .exchange()
             .expectStatus()
             .isOk
@@ -82,7 +83,7 @@ class HttpMethodPreservationTest {
         webTestClient
             .delete()
             .uri("/api/users/1")
-            .header("Authorization", "Bearer test-token")
+            .header("Authorization", JwtTestSupport.validAuthHeader())
             .exchange()
             .expectStatus()
             .isOk
