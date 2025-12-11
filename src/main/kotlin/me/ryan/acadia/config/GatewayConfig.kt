@@ -52,6 +52,7 @@ class GatewayConfig(
             .circuitBreaker { config ->
                 config.setName(CIRCUIT_BREAKER_NAME)
                 config.addStatusCode(HttpStatus.INTERNAL_SERVER_ERROR.name)
+                config.addStatusCode(HttpStatus.BAD_GATEWAY.name)
             }.retry { config ->
                 config.setRetries(props.retry.retries)
                 config.setStatuses(*props.retry.statuses.toTypedArray())
