@@ -21,12 +21,12 @@ class GatewayConfig {
             .route("user-service") { r ->
                 r
                     .path("/api/users/**")
-                    .filters { f -> f.stripPrefix(1) }
+                    .filters { f -> f.stripPrefix(1).preserveHostHeader() }
                     .uri(userServiceUrl)
             }.route("order-service") { r ->
                 r
                     .path("/api/orders/**")
-                    .filters { f -> f.stripPrefix(1) }
+                    .filters { f -> f.stripPrefix(1).preserveHostHeader() }
                     .uri(orderServiceUrl)
             }.build()
 }
