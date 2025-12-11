@@ -14,6 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment
 import org.springframework.boot.webtestclient.autoconfigure.AutoConfigureWebTestClient
+import org.springframework.http.HttpHeaders
 import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
 import org.springframework.test.web.reactive.server.WebTestClient
@@ -48,7 +49,7 @@ class HeaderForwardingTest {
         webTestClient
             .get()
             .uri("/api/users/1")
-            .header("Authorization", JwtTestSupport.validAuthHeader())
+            .header(HttpHeaders.AUTHORIZATION, JwtTestSupport.validAuthHeader())
             .header("X-Custom-Header", "custom-value")
             .exchange()
             .expectStatus()
@@ -70,7 +71,7 @@ class HeaderForwardingTest {
         webTestClient
             .get()
             .uri("/api/users/1")
-            .header("Authorization", JwtTestSupport.validAuthHeader())
+            .header(HttpHeaders.AUTHORIZATION, JwtTestSupport.validAuthHeader())
             .header("Accept", "application/json")
             .exchange()
             .expectStatus()
@@ -92,7 +93,7 @@ class HeaderForwardingTest {
         webTestClient
             .get()
             .uri("/api/users/1")
-            .header("Authorization", JwtTestSupport.validAuthHeader())
+            .header(HttpHeaders.AUTHORIZATION, JwtTestSupport.validAuthHeader())
             .header("Content-Type", "application/json")
             .exchange()
             .expectStatus()
@@ -116,14 +117,14 @@ class HeaderForwardingTest {
         webTestClient
             .get()
             .uri("/api/users/1")
-            .header("Authorization", validToken)
+            .header(HttpHeaders.AUTHORIZATION, validToken)
             .exchange()
             .expectStatus()
             .isOk
 
         wireMock.verify(
             getRequestedFor(urlPathMatching("/users/.*"))
-                .withHeader("Authorization", equalTo(validToken)),
+                .withHeader(HttpHeaders.AUTHORIZATION, equalTo(validToken)),
         )
     }
 
@@ -137,7 +138,7 @@ class HeaderForwardingTest {
         webTestClient
             .get()
             .uri("/api/users/1")
-            .header("Authorization", JwtTestSupport.validAuthHeader())
+            .header(HttpHeaders.AUTHORIZATION, JwtTestSupport.validAuthHeader())
             .header("X-Request-Id", "req-123")
             .header("X-Correlation-Id", "corr-456")
             .header("Accept-Language", "ko-KR")

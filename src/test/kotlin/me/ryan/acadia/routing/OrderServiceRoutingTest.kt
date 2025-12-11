@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment
 import org.springframework.boot.webtestclient.autoconfigure.AutoConfigureWebTestClient
+import org.springframework.http.HttpHeaders
 import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
 import org.springframework.test.web.reactive.server.WebTestClient
@@ -45,7 +46,7 @@ class OrderServiceRoutingTest {
         webTestClient
             .get()
             .uri("/api/orders/123")
-            .header("Authorization", JwtTestSupport.validAuthHeader())
+            .header(HttpHeaders.AUTHORIZATION, JwtTestSupport.validAuthHeader())
             .exchange()
             .expectStatus()
             .isOk

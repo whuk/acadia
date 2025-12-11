@@ -6,6 +6,10 @@ spring:
   output:
     ansi:
       enabled: always
+  jpa:
+    # JPA is disabled when no datasource is configured
+    # To enable: set spring.datasource.url and gateway.logging.storage=db
+    open-in-view: false
   cloud:
     gateway:
       server:
@@ -27,6 +31,13 @@ logging:
     org.springframework.cloud.gateway: DEBUG
 
 gateway:
+  logging:
+    enabled: false
+    storage: none  # none | file | db
+    include-headers: false
+    include-query-params: true
+    file:
+      path: ./logs/gateway-requests.log
   services:
     - name: user-service
       path: /api/users/**
