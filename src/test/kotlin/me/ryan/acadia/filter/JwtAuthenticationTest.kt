@@ -14,6 +14,7 @@ import org.junit.jupiter.api.extension.RegisterExtension
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment
+import org.springframework.http.HttpHeaders
 import org.springframework.boot.webtestclient.autoconfigure.AutoConfigureWebTestClient
 import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
@@ -59,7 +60,7 @@ class JwtAuthenticationTest {
         webTestClient
             .get()
             .uri("/api/users/1")
-            .header("Authorization", "Bearer invalid-token")
+            .header(HttpHeaders.AUTHORIZATION, "Bearer invalid-token")
             .exchange()
             .expectStatus()
             .isUnauthorized
@@ -72,7 +73,7 @@ class JwtAuthenticationTest {
         webTestClient
             .get()
             .uri("/api/users/1")
-            .header("Authorization", "Bearer $expiredToken")
+            .header(HttpHeaders.AUTHORIZATION, "Bearer $expiredToken")
             .exchange()
             .expectStatus()
             .isUnauthorized
@@ -90,7 +91,7 @@ class JwtAuthenticationTest {
         webTestClient
             .get()
             .uri("/api/users/1")
-            .header("Authorization", "Bearer $validToken")
+            .header(HttpHeaders.AUTHORIZATION, "Bearer $validToken")
             .exchange()
             .expectStatus()
             .isOk
@@ -109,7 +110,7 @@ class JwtAuthenticationTest {
         webTestClient
             .get()
             .uri("/api/users/1")
-            .header("Authorization", "Bearer $validToken")
+            .header(HttpHeaders.AUTHORIZATION, "Bearer $validToken")
             .exchange()
             .expectStatus()
             .isOk
@@ -133,7 +134,7 @@ class JwtAuthenticationTest {
         webTestClient
             .get()
             .uri("/api/users/1")
-            .header("Authorization", "Bearer $validToken")
+            .header(HttpHeaders.AUTHORIZATION, "Bearer $validToken")
             .exchange()
             .expectStatus()
             .isOk

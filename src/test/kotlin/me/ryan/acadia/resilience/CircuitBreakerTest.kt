@@ -12,6 +12,7 @@ import org.junit.jupiter.api.extension.RegisterExtension
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment
+import org.springframework.http.HttpHeaders
 import org.springframework.boot.webtestclient.autoconfigure.AutoConfigureWebTestClient
 import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
@@ -60,7 +61,7 @@ class CircuitBreakerTest {
             webTestClient
                 .get()
                 .uri("/api/users/1")
-                .header("Authorization", JwtTestSupport.validAuthHeader())
+                .header(HttpHeaders.AUTHORIZATION, JwtTestSupport.validAuthHeader())
                 .exchange()
         }
 
@@ -69,7 +70,7 @@ class CircuitBreakerTest {
         webTestClient
             .get()
             .uri("/api/users/1")
-            .header("Authorization", JwtTestSupport.validAuthHeader())
+            .header(HttpHeaders.AUTHORIZATION, JwtTestSupport.validAuthHeader())
             .exchange()
             .expectStatus()
             .isEqualTo(503)
@@ -88,7 +89,7 @@ class CircuitBreakerTest {
             webTestClient
                 .get()
                 .uri("/api/users/2")
-                .header("Authorization", JwtTestSupport.validAuthHeader())
+                .header(HttpHeaders.AUTHORIZATION, JwtTestSupport.validAuthHeader())
                 .exchange()
         }
 
@@ -100,7 +101,7 @@ class CircuitBreakerTest {
         webTestClient
             .get()
             .uri("/api/users/2")
-            .header("Authorization", JwtTestSupport.validAuthHeader())
+            .header(HttpHeaders.AUTHORIZATION, JwtTestSupport.validAuthHeader())
             .exchange()
             .expectStatus()
             .isEqualTo(503)

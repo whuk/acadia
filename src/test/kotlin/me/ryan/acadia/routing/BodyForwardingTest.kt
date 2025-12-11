@@ -13,6 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment
 import org.springframework.boot.webtestclient.autoconfigure.AutoConfigureWebTestClient
+import org.springframework.http.HttpHeaders
 import org.springframework.http.MediaType
 import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
@@ -50,7 +51,7 @@ class BodyForwardingTest {
         webTestClient
             .post()
             .uri("/api/users")
-            .header("Authorization", JwtTestSupport.validAuthHeader())
+            .header(HttpHeaders.AUTHORIZATION, JwtTestSupport.validAuthHeader())
             .contentType(MediaType.APPLICATION_JSON)
             .bodyValue(requestBody)
             .exchange()
