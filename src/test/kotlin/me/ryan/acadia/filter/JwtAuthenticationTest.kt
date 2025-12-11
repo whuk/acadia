@@ -117,6 +117,43 @@ class JwtAuthenticationTest {
         )
     }
 
+    @Test
+    fun `JWT에서 추출한 역할이 X-User-Roles 헤더로 전달된다`() {
+        wireMock.stubFor(
+            get(urlPathMatching("/users/.*"))
+                .willReturn(ok().withBody("""{"id": 1}""")),
+        )
+
+        val roles = listOf("admin", "user")
+        val validToken = createValidTokenWithRoles(roles)
+
+        webTestClient
+            .get()
+            .uri("/api/users/1")
+            .header("Authorization", "Bearer $validToken")
+            .exchange()
+            .expectStatus()
+            .isOk
+
+        wireMock.verify(
+            getRequestedFor(urlPathMatching("/users/.*"))
+                .withHeader("X-User-Roles", equalTo("admin,user")),
+        )
+    }
+
+    private fun createValidTokenWithRoles(roles: List<String>): String {
+        val secretKey = Keys.hmacShaKeyFor(jwtProperties.secret.toByteArray())
+        val futureDate = Date(System.currentTimeMillis() + 3600000)
+
+        return Jwts
+            .builder()
+            .subject("test-user")
+            .claim("roles", roles)
+            .expiration(futureDate)
+            .signWith(secretKey)
+            .compact()
+    }
+
     private fun createValidTokenWithSubject(subject: String): String {
         val secretKey = Keys.hmacShaKeyFor(jwtProperties.secret.toByteArray())
         val futureDate = Date(System.currentTimeMillis() + 3600000)
