@@ -1,6 +1,8 @@
 package me.ryan.acadia.filter
 
+import com.github.tomakehurst.wiremock.client.WireMock.equalTo
 import com.github.tomakehurst.wiremock.client.WireMock.get
+import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.ok
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension
@@ -89,6 +91,42 @@ class JwtAuthenticationTest {
             .exchange()
             .expectStatus()
             .isOk
+    }
+
+    @Test
+    fun `JWT에서 추출한 사용자 ID가 X-User-Id 헤더로 전달된다`() {
+        wireMock.stubFor(
+            get(urlPathMatching("/users/.*"))
+                .willReturn(ok().withBody("""{"id": 1}""")),
+        )
+
+        val userId = "user-123"
+        val validToken = createValidTokenWithSubject(userId)
+
+        webTestClient
+            .get()
+            .uri("/api/users/1")
+            .header("Authorization", "Bearer $validToken")
+            .exchange()
+            .expectStatus()
+            .isOk
+
+        wireMock.verify(
+            getRequestedFor(urlPathMatching("/users/.*"))
+                .withHeader("X-User-Id", equalTo(userId)),
+        )
+    }
+
+    private fun createValidTokenWithSubject(subject: String): String {
+        val secretKey = Keys.hmacShaKeyFor(jwtProperties.secret.toByteArray())
+        val futureDate = Date(System.currentTimeMillis() + 3600000)
+
+        return Jwts
+            .builder()
+            .subject(subject)
+            .expiration(futureDate)
+            .signWith(secretKey)
+            .compact()
     }
 
     private fun createValidToken(): String {
