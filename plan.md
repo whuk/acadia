@@ -21,7 +21,7 @@ Spring Cloud Gateway 기반 API Gateway MVP 구현을 위한 TDD 테스트 계�
 - [x] 2.1 /api/users/** 요청이 user-service로 라우팅된다
 - [x] 2.2 /api/orders/** 요청이 order-service로 라우팅된다
 - [x] 2.3 정의되지 않은 경로는 404를 반환한다
-- [ ] 2.4 라우팅 시 원본 HTTP 메서드가 유지된다
+- [x] 2.4 라우팅 시 원본 HTTP 메서드가 유지된다
 - [ ] 2.5 라우팅 시 원본 헤더가 전달된다
 - [ ] 2.6 라우팅 시 원본 바디가 전달된다
 
@@ -71,8 +71,8 @@ Spring Cloud Gateway 기반 API Gateway MVP 구현을 위한 TDD 테스트 계�
 
 ## 진행 상태
 - 총 테스트: 36개
-- 완료: 7개
-- 진행률: 19.4%
+- 완료: 8개
+- 진행률: 22.2%
 
 ## 사용법
 ```
