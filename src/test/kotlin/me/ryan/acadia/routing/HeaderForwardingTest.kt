@@ -7,6 +7,7 @@ import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.ok
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension
+import me.ryan.acadia.support.JwtTestSupport
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.RegisterExtension
 import org.springframework.beans.factory.annotation.Autowired
@@ -45,7 +46,7 @@ class HeaderForwardingTest {
         webTestClient
             .get()
             .uri("/api/users/1")
-            .header("Authorization", "Bearer test-token")
+            .header("Authorization", JwtTestSupport.validAuthHeader())
             .header("X-Custom-Header", "custom-value")
             .exchange()
             .expectStatus()
@@ -67,7 +68,7 @@ class HeaderForwardingTest {
         webTestClient
             .get()
             .uri("/api/users/1")
-            .header("Authorization", "Bearer test-token")
+            .header("Authorization", JwtTestSupport.validAuthHeader())
             .header("Accept", "application/json")
             .exchange()
             .expectStatus()
@@ -89,7 +90,7 @@ class HeaderForwardingTest {
         webTestClient
             .get()
             .uri("/api/users/1")
-            .header("Authorization", "Bearer test-token")
+            .header("Authorization", JwtTestSupport.validAuthHeader())
             .header("Content-Type", "application/json")
             .exchange()
             .expectStatus()
@@ -103,6 +104,8 @@ class HeaderForwardingTest {
 
     @Test
     fun `Authorization 헤더가 라우팅 시 전달된다`() {
+        val validToken = JwtTestSupport.validAuthHeader()
+
         wireMock.stubFor(
             get(urlPathMatching("/users/.*"))
                 .willReturn(ok().withBody("""{"id": 1}""")),
@@ -111,14 +114,14 @@ class HeaderForwardingTest {
         webTestClient
             .get()
             .uri("/api/users/1")
-            .header("Authorization", "Bearer test-token")
+            .header("Authorization", validToken)
             .exchange()
             .expectStatus()
             .isOk
 
         wireMock.verify(
             getRequestedFor(urlPathMatching("/users/.*"))
-                .withHeader("Authorization", equalTo("Bearer test-token")),
+                .withHeader("Authorization", equalTo(validToken)),
         )
     }
 
@@ -132,7 +135,7 @@ class HeaderForwardingTest {
         webTestClient
             .get()
             .uri("/api/users/1")
-            .header("Authorization", "Bearer test-token")
+            .header("Authorization", JwtTestSupport.validAuthHeader())
             .header("X-Request-Id", "req-123")
             .header("X-Correlation-Id", "corr-456")
             .header("Accept-Language", "ko-KR")

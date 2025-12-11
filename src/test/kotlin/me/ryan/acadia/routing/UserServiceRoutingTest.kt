@@ -4,6 +4,7 @@ import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.ok
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension
+import me.ryan.acadia.support.JwtTestSupport
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.RegisterExtension
 import org.springframework.beans.factory.annotation.Autowired
@@ -42,7 +43,7 @@ class UserServiceRoutingTest {
         webTestClient
             .get()
             .uri("/api/users/1")
-            .header("Authorization", "Bearer test-token")
+            .header("Authorization", JwtTestSupport.validAuthHeader())
             .exchange()
             .expectStatus()
             .isOk
