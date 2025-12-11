@@ -1,5 +1,6 @@
 package me.ryan.acadia.filter
 
+import io.jsonwebtoken.Claims
 import io.jsonwebtoken.JwtException
 import io.jsonwebtoken.Jwts
 import io.jsonwebtoken.security.Keys
@@ -25,6 +26,7 @@ class JwtAuthenticationFilter(
 
     companion object {
         private const val BEARER_PREFIX = "Bearer "
+        private const val X_USER_ID_HEADER = "X-User-Id"
     }
 
     override fun filter(
@@ -37,11 +39,16 @@ class JwtAuthenticationFilter(
 
         val token = extractToken(authHeader) ?: return unauthorized(exchange)
 
-        if (!isValidToken(token)) {
-            return unauthorized(exchange)
-        }
+        val claims = parseToken(token) ?: return unauthorized(exchange)
 
-        return chain.filter(exchange)
+        val mutatedExchange =
+            exchange
+                .mutate()
+                .request { request ->
+                    request.header(X_USER_ID_HEADER, claims.subject)
+                }.build()
+
+        return chain.filter(mutatedExchange)
     }
 
     private fun extractToken(authHeader: String): String? =
@@ -49,16 +56,16 @@ class JwtAuthenticationFilter(
             .takeIf { it.startsWith(BEARER_PREFIX) }
             ?.removePrefix(BEARER_PREFIX)
 
-    private fun isValidToken(token: String): Boolean =
+    private fun parseToken(token: String): Claims? =
         try {
             Jwts
                 .parser()
                 .verifyWith(secretKey)
                 .build()
                 .parseSignedClaims(token)
-            true
+                .payload
         } catch (_: JwtException) {
-            false
+            null
         }
 
     private fun unauthorized(exchange: ServerWebExchange): Mono<Void> {
