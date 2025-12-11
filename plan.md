@@ -36,7 +36,7 @@ Spring Cloud Gateway 기반 API Gateway MVP 구현을 위한 TDD 테스트 계�
 
 ## Phase 4: 장애 대응 (Resilience)
 - [x] 4.1 백엔드 응답이 3초 초과 시 504를 반환한다
-- [ ] 4.2 백엔드 연결이 1초 초과 시 504를 반환한다
+- [x] 4.2 백엔드 연결이 1초 초과 시 504를 반환한다
 - [ ] 4.3 백엔드 실패 시 최대 3회 재시도한다
 - [ ] 4.4 실패율 50% 초과 시 Circuit Breaker가 열린다
 - [ ] 4.5 Circuit Breaker 열린 상태에서 503을 반환한다
