@@ -46,7 +46,7 @@ class RequestLoggingFilter(
                 val filteredHeaders =
                     request.headers
                         .toSingleValueMap()
-                        .filterKeys { !it.equals("Authorization", ignoreCase = true) }
+                        .filterKeys { !it.equals(GatewayHeaders.AUTHORIZATION, ignoreCase = true) }
                 objectMapper.writeValueAsString(filteredHeaders)
             } else {
                 null
