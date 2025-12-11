@@ -29,7 +29,7 @@ Spring Cloud Gateway 기반 API Gateway MVP 구현을 위한 TDD 테스트 계�
 - [x] 3.1 Authorization 헤더 없는 요청은 401을 반환한다
 - [x] 3.2 잘못된 JWT 토큰은 401을 반환한다
 - [x] 3.3 만료된 JWT 토큰은 401을 반환한다
-- [ ] 3.4 유효한 JWT 토큰은 라우팅이 진행된다
+- [x] 3.4 유효한 JWT 토큰은 라우팅이 진행된다
 - [ ] 3.5 JWT에서 추출한 사용자 ID가 X-User-Id 헤더로 전달된다
 - [ ] 3.6 JWT에서 추출한 역할이 X-User-Roles 헤더로 전달된다
 - [ ] 3.7 공개 경로(/api/public/**)는 인증 없이 접근 가능하다
