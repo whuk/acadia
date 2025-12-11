@@ -27,6 +27,10 @@ logging:
     org.springframework.cloud.gateway: DEBUG
 
 gateway:
+  logging:
+    enabled: false
+    include-headers: false
+    include-query-params: true
   services:
     - name: user-service
       path: /api/users/**
