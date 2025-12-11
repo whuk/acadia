@@ -3,7 +3,8 @@ package me.ryan.acadia.filter
 import com.fasterxml.jackson.databind.ObjectMapper
 import me.ryan.acadia.common.GatewayHeaders
 import me.ryan.acadia.config.LoggingProperties
-import org.slf4j.LoggerFactory
+import me.ryan.acadia.logging.LogStorage
+import me.ryan.acadia.logging.RequestLogEntry
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.cloud.gateway.filter.GatewayFilterChain
@@ -19,10 +20,10 @@ import java.time.Instant
 @EnableConfigurationProperties(LoggingProperties::class)
 class RequestLoggingFilter(
     private val loggingProperties: LoggingProperties,
+    private val logStorage: LogStorage,
 ) : GlobalFilter,
     Ordered {
-    private val logger = LoggerFactory.getLogger(RequestLoggingFilter::class.java)
-    private val objectMapper = ObjectMapper()
+    private val objectMapper = ObjectMapper().findAndRegisterModules()
 
     override fun filter(
         exchange: ServerWebExchange,
@@ -33,26 +34,35 @@ class RequestLoggingFilter(
             request.headers.getFirst(GatewayHeaders.X_REQUEST_ID)
                 ?: exchange.response.headers.getFirst(GatewayHeaders.X_REQUEST_ID)
 
-        val logData =
-            buildMap {
-                put("type", "REQUEST")
-                put("timestamp", Instant.now().toString())
-                put("requestId", requestId)
-                put("method", request.method.name())
-                put("path", request.path.value())
-                if (loggingProperties.includeQueryParams && request.queryParams.isNotEmpty()) {
-                    put("queryParams", request.queryParams.toSingleValueMap())
-                }
-                if (loggingProperties.includeHeaders) {
-                    val filteredHeaders =
-                        request.headers
-                            .toSingleValueMap()
-                            .filterKeys { !it.equals("Authorization", ignoreCase = true) }
-                    put("headers", filteredHeaders)
-                }
+        val queryParams =
+            if (loggingProperties.includeQueryParams && request.queryParams.isNotEmpty()) {
+                objectMapper.writeValueAsString(request.queryParams.toSingleValueMap())
+            } else {
+                null
             }
 
-        logger.info(objectMapper.writeValueAsString(logData))
+        val headers =
+            if (loggingProperties.includeHeaders) {
+                val filteredHeaders =
+                    request.headers
+                        .toSingleValueMap()
+                        .filterKeys { !it.equals("Authorization", ignoreCase = true) }
+                objectMapper.writeValueAsString(filteredHeaders)
+            } else {
+                null
+            }
+
+        val logEntry =
+            RequestLogEntry(
+                timestamp = Instant.now(),
+                requestId = requestId,
+                method = request.method.name(),
+                path = request.path.value(),
+                queryParams = queryParams,
+                headers = headers,
+            )
+
+        logStorage.store(logEntry)
 
         return chain.filter(exchange)
     }

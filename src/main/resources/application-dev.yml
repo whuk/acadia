@@ -2,8 +2,13 @@
 server:
   port: 8080
 
+gateway:
+  logging:
+    enabled: true
+    # storage: none | file | db (override as needed)
+
 logging:
   level:
     root: INFO
-    me.ryan.acadia: INFO
+    me.ryan.acadia: DEBUG
     org.springframework.cloud.gateway: DEBUG

@@ -2,6 +2,11 @@
 server:
   port: 8080
 
+gateway:
+  logging:
+    enabled: true
+    # storage: none | file | db (configure via GATEWAY_LOGGING_STORAGE env var)
+
 logging:
   level:
     root: WARN
