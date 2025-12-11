@@ -26,7 +26,9 @@ class UserServiceRoutingTest {
         @JvmStatic
         @DynamicPropertySource
         fun configureProperties(registry: DynamicPropertyRegistry) {
-            registry.add("user-service.url") { wireMock.baseUrl() }
+            registry.add("gateway.services[0].name") { "user-service" }
+            registry.add("gateway.services[0].path") { "/api/users/**" }
+            registry.add("gateway.services[0].url") { wireMock.baseUrl() }
         }
     }
 

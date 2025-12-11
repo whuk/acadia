@@ -21,8 +21,10 @@ class ConnectionTimeoutTest {
         @JvmStatic
         @DynamicPropertySource
         fun configureProperties(registry: DynamicPropertyRegistry) {
+            registry.add("gateway.services[0].name") { "user-service" }
+            registry.add("gateway.services[0].path") { "/api/users/**" }
             // 10.255.255.1 is a non-routable IP that will cause connection timeout
-            registry.add("user-service.url") { "http://10.255.255.1:8081" }
+            registry.add("gateway.services[0].url") { "http://10.255.255.1:8081" }
         }
     }
 

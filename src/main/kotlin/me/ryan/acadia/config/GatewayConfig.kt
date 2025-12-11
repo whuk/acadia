@@ -1,37 +1,53 @@
 package me.ryan.acadia.config
 
-import org.springframework.beans.factory.annotation.Value
+import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.cloud.gateway.route.RouteLocator
+import org.springframework.cloud.gateway.route.builder.GatewayFilterSpec
 import org.springframework.cloud.gateway.route.builder.RouteLocatorBuilder
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 
 @Configuration
-class GatewayConfig {
-    @Value("\${user-service.url}")
-    private lateinit var userServiceUrl: String
-
-    @Value("\${order-service.url}")
-    private lateinit var orderServiceUrl: String
-
+@EnableConfigurationProperties(GatewayProperties::class)
+class GatewayConfig(
+    private val props: GatewayProperties,
+) {
     @Bean
-    fun customRouteLocator(builder: RouteLocatorBuilder): RouteLocator =
-        builder
-            .routes()
-            .route("public-user-service") { r ->
-                r
-                    .path("/api/public/users/**")
-                    .filters { f -> f.stripPrefix(2).preserveHostHeader() }
-                    .uri(userServiceUrl)
-            }.route("user-service") { r ->
-                r
-                    .path("/api/users/**")
-                    .filters { f -> f.stripPrefix(1).preserveHostHeader() }
-                    .uri(userServiceUrl)
-            }.route("order-service") { r ->
-                r
-                    .path("/api/orders/**")
-                    .filters { f -> f.stripPrefix(1).preserveHostHeader() }
-                    .uri(orderServiceUrl)
-            }.build()
+    fun customRouteLocator(builder: RouteLocatorBuilder): RouteLocator {
+        var routes = builder.routes()
+
+        props.services.forEach { service ->
+            if (service.hasPublicPath) {
+                val publicPath = service.path.replace("/api/", "/api/public/")
+                routes =
+                    routes.route("public-${service.name}") { r ->
+                        r
+                            .path(publicPath)
+                            .filters { f -> f.applyCommonFilters(service.stripPrefix + 1) }
+                            .uri(service.url)
+                    }
+            }
+
+            routes =
+                routes.route(service.name) { r ->
+                    r
+                        .path(service.path)
+                        .filters { f -> f.applyCommonFilters(service.stripPrefix) }
+                        .uri(service.url)
+                }
+        }
+
+        return routes.build()
+    }
+
+    private fun GatewayFilterSpec.applyCommonFilters(stripPrefix: Int): GatewayFilterSpec =
+        this
+            .stripPrefix(stripPrefix)
+            .preserveHostHeader()
+            .retry { config ->
+                config.setRetries(props.retry.retries)
+                config.setStatuses(*props.retry.statuses.toTypedArray())
+                config.setMethods(*props.retry.methods.toTypedArray())
+                config.setExceptions(*emptyArray<Class<out Throwable>>())
+            }
 }
