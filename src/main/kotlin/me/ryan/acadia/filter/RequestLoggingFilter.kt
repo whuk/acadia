@@ -10,6 +10,7 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.cloud.gateway.filter.GatewayFilterChain
 import org.springframework.cloud.gateway.filter.GlobalFilter
 import org.springframework.core.Ordered
+import org.springframework.http.HttpHeaders
 import org.springframework.stereotype.Component
 import org.springframework.web.server.ServerWebExchange
 import reactor.core.publisher.Mono
@@ -46,7 +47,7 @@ class RequestLoggingFilter(
                 val filteredHeaders =
                     request.headers
                         .toSingleValueMap()
-                        .filterKeys { !it.equals(GatewayHeaders.AUTHORIZATION, ignoreCase = true) }
+                        .filterKeys { !it.equals(HttpHeaders.AUTHORIZATION, ignoreCase = true) }
                 objectMapper.writeValueAsString(filteredHeaders)
             } else {
                 null
