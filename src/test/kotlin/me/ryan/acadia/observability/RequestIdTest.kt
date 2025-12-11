@@ -1,5 +1,6 @@
 package me.ryan.acadia.observability
 
+import com.github.tomakehurst.wiremock.client.WireMock.equalTo
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.matching
@@ -58,6 +59,33 @@ class RequestIdTest {
         wireMock.verify(
             getRequestedFor(urlPathMatching("/users/.*"))
                 .withHeader("X-Request-Id", matching(".+")),
+        )
+    }
+
+    @Test
+    fun `클라이언트가 보낸 X-Request-Id가 있으면 유지된다`() {
+        val clientRequestId = "client-provided-request-id-12345"
+
+        wireMock.stubFor(
+            get(urlPathMatching("/users/.*"))
+                .willReturn(ok().withBody("""{"id": 1}""")),
+        )
+
+        webTestClient
+            .get()
+            .uri("/api/users/1")
+            .header("Authorization", JwtTestSupport.validAuthHeader())
+            .header("X-Request-Id", clientRequestId)
+            .exchange()
+            .expectStatus()
+            .isOk
+            .expectHeader()
+            .valueEquals("X-Request-Id", clientRequestId)
+
+        // Verify the same X-Request-Id was forwarded to backend
+        wireMock.verify(
+            getRequestedFor(urlPathMatching("/users/.*"))
+                .withHeader("X-Request-Id", equalTo(clientRequestId)),
         )
     }
 }
