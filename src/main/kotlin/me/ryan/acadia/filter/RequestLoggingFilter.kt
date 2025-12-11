@@ -53,7 +53,7 @@ class RequestLoggingFilter(
             }
 
         val logEntry =
-            RequestLogEntry(
+            RequestLogEntry.create(
                 timestamp = Instant.now(),
                 requestId = requestId,
                 method = request.method.name(),
