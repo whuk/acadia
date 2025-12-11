@@ -29,12 +29,18 @@ class JwtAuthenticationFilter(
         private const val X_USER_ID_HEADER = "X-User-Id"
         private const val X_USER_ROLES_HEADER = "X-User-Roles"
         private const val ROLES_CLAIM = "roles"
+        private const val PUBLIC_PATH_PREFIX = "/api/public/"
     }
 
     override fun filter(
         exchange: ServerWebExchange,
         chain: GatewayFilterChain,
     ): Mono<Void> {
+        val path = exchange.request.path.value()
+        if (path.startsWith(PUBLIC_PATH_PREFIX)) {
+            return chain.filter(exchange)
+        }
+
         val authHeader =
             exchange.request.headers.getFirst(HttpHeaders.AUTHORIZATION)
                 ?: return unauthorized(exchange)

@@ -18,7 +18,12 @@ class GatewayConfig {
     fun customRouteLocator(builder: RouteLocatorBuilder): RouteLocator =
         builder
             .routes()
-            .route("user-service") { r ->
+            .route("public-user-service") { r ->
+                r
+                    .path("/api/public/users/**")
+                    .filters { f -> f.stripPrefix(2).preserveHostHeader() }
+                    .uri(userServiceUrl)
+            }.route("user-service") { r ->
                 r
                     .path("/api/users/**")
                     .filters { f -> f.stripPrefix(1).preserveHostHeader() }

@@ -141,6 +141,21 @@ class JwtAuthenticationTest {
         )
     }
 
+    @Test
+    fun `공개 경로는 인증 없이 접근 가능하다`() {
+        wireMock.stubFor(
+            get(urlPathMatching("/users/.*"))
+                .willReturn(ok().withBody("""{"id": 1}""")),
+        )
+
+        webTestClient
+            .get()
+            .uri("/api/public/users/1")
+            .exchange()
+            .expectStatus()
+            .isOk
+    }
+
     private fun createValidTokenWithRoles(roles: List<String>): String {
         val secretKey = Keys.hmacShaKeyFor(jwtProperties.secret.toByteArray())
         val futureDate = Date(System.currentTimeMillis() + 3600000)
