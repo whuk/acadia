@@ -8,10 +8,10 @@ import org.springframework.context.annotation.Configuration
 
 @Configuration
 class GatewayConfig {
-    @Value("\${user-service.url:http://localhost:8081}")
+    @Value("\${user-service.url}")
     private lateinit var userServiceUrl: String
 
-    @Value("\${order-service.url:http://localhost:8082}")
+    @Value("\${order-service.url}")
     private lateinit var orderServiceUrl: String
 
     @Bean
