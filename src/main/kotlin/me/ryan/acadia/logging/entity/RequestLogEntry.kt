@@ -1,4 +1,4 @@
-package me.ryan.acadia.logging
+package me.ryan.acadia.logging.entity
 
 import jakarta.persistence.Entity
 import jakarta.persistence.GeneratedValue

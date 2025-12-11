@@ -1,5 +1,6 @@
-package me.ryan.acadia.logging
+package me.ryan.acadia.logging.repository
 
+import me.ryan.acadia.logging.entity.RequestLogEntry
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.stereotype.Repository
 

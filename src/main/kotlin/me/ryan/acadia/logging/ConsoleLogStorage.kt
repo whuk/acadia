@@ -1,6 +1,7 @@
 package me.ryan.acadia.logging
 
 import me.ryan.acadia.logging.LogEntryFormatter.toJson
+import me.ryan.acadia.logging.entity.RequestLogEntry
 import org.slf4j.LoggerFactory
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.stereotype.Component

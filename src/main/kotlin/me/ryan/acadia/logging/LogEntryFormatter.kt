@@ -1,6 +1,7 @@
 package me.ryan.acadia.logging
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import me.ryan.acadia.logging.entity.RequestLogEntry
 
 object LogEntryFormatter {
     private val objectMapper = ObjectMapper().findAndRegisterModules()
