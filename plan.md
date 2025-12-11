@@ -43,7 +43,7 @@ Spring Cloud Gateway 기반 API Gateway MVP 구현을 위한 TDD 테스트 계�
 - [x] 4.6 백엔드 5xx 오류는 502로 변환된다
 
 ## Phase 5: 로깅 & 트레이싱
-- [ ] 5.1 모든 요청에 X-Request-Id가 생성된다
+- [x] 5.1 모든 요청에 X-Request-Id가 생성된다
 - [ ] 5.2 클라이언트가 보낸 X-Request-Id가 있으면 유지된다
 - [ ] 5.3 요청 로그가 JSON 형식으로 기록된다
 - [ ] 5.4 응답 로그가 JSON 형식으로 기록된다
