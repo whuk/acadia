@@ -1,6 +1,8 @@
 package me.ryan.acadia.resilience
 
+import com.github.tomakehurst.wiremock.client.WireMock.exactly
 import com.github.tomakehurst.wiremock.client.WireMock.get
+import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.serverError
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension
@@ -71,5 +73,39 @@ class CircuitBreakerTest {
             .exchange()
             .expectStatus()
             .isEqualTo(503)
+    }
+
+    @Test
+    fun `Circuit Breaker 열린 상태에서 503을 반환한다`() {
+        // Setup: Backend always returns 500 error
+        wireMock.stubFor(
+            get(urlPathMatching("/users/.*"))
+                .willReturn(serverError()),
+        )
+
+        // Trip the circuit breaker by making enough failed requests
+        repeat(4) {
+            webTestClient
+                .get()
+                .uri("/api/users/2")
+                .header("Authorization", JwtTestSupport.validAuthHeader())
+                .exchange()
+        }
+
+        // Reset WireMock request count to verify no backend calls are made
+        wireMock.resetRequests()
+
+        // When circuit breaker is open, request should return 503 immediately
+        // WITHOUT calling the backend
+        webTestClient
+            .get()
+            .uri("/api/users/2")
+            .header("Authorization", JwtTestSupport.validAuthHeader())
+            .exchange()
+            .expectStatus()
+            .isEqualTo(503)
+
+        // Verify: No request was sent to backend (circuit breaker blocked it)
+        wireMock.verify(exactly(0), getRequestedFor(urlPathMatching("/users/.*")))
     }
 }
