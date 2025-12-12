@@ -2,7 +2,7 @@ package me.ryan.acadia.logging
 
 import me.ryan.acadia.config.LoggingProperties
 import me.ryan.acadia.logging.LogEntryFormatter.toJson
-import me.ryan.acadia.logging.entity.RequestLogEntry
+import me.ryan.acadia.logging.entity.LogEntry
 import org.slf4j.LoggerFactory
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.stereotype.Component
@@ -17,7 +17,7 @@ class FileLogStorage(
 ) : LogStorage {
     private val logger = LoggerFactory.getLogger(FileLogStorage::class.java)
 
-    override fun store(entry: RequestLogEntry) {
+    override fun store(entry: LogEntry) {
         val jsonLine = entry.toJson()
 
         try {

@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import me.ryan.acadia.common.GatewayHeaders
 import me.ryan.acadia.config.LoggingProperties
 import me.ryan.acadia.logging.LogStorage
-import me.ryan.acadia.logging.entity.RequestLogEntry
+import me.ryan.acadia.logging.entity.LogEntry
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.cloud.gateway.filter.GatewayFilterChain
@@ -54,7 +54,7 @@ class RequestLoggingFilter(
             }
 
         val logEntry =
-            RequestLogEntry.create(
+            LogEntry.request(
                 timestamp = Instant.now(),
                 requestId = requestId,
                 method = request.method.name(),

@@ -1,7 +1,7 @@
 package me.ryan.acadia.logging
 
-import me.ryan.acadia.logging.entity.RequestLogEntry
-import me.ryan.acadia.logging.repository.RequestLogRepository
+import me.ryan.acadia.logging.entity.LogEntry
+import me.ryan.acadia.logging.repository.LogRepository
 import org.slf4j.LoggerFactory
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.stereotype.Component
@@ -9,17 +9,16 @@ import org.springframework.stereotype.Component
 @Component
 @ConditionalOnProperty(prefix = "gateway.logging", name = ["storage"], havingValue = "db")
 class DatabaseLogStorage(
-    private val requestLogRepository: RequestLogRepository,
+    private val logRepository: LogRepository,
 ) : LogStorage {
     private val logger = LoggerFactory.getLogger(DatabaseLogStorage::class.java)
 
-    override fun store(entry: RequestLogEntry) {
+    override fun store(entry: LogEntry) {
         try {
-            requestLogRepository.save(entry)
+            logRepository.save(entry)
             logger.debug(
-                "Stored request log: {} {} {}",
-                entry.method,
-                entry.path,
+                "Stored {} log: requestId={}",
+                entry.type,
                 entry.requestId,
             )
         } catch (e: Exception) {

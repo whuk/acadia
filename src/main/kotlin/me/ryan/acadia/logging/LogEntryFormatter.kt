@@ -1,21 +1,31 @@
 package me.ryan.acadia.logging
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import me.ryan.acadia.logging.entity.RequestLogEntry
+import me.ryan.acadia.logging.entity.LogEntry
+import me.ryan.acadia.logging.entity.LogType
 
 object LogEntryFormatter {
     private val objectMapper = ObjectMapper().findAndRegisterModules()
 
-    fun RequestLogEntry.toLogMap(): Map<String, Any?> =
+    fun LogEntry.toLogMap(): Map<String, Any?> =
         buildMap {
-            put("type", "REQUEST")
+            put("type", type.name)
             put("timestamp", timestamp.toString())
             put("requestId", requestId)
-            put("method", method)
-            put("path", path)
-            queryParams?.let { put("queryParams", it) }
-            headers?.let { put("headers", it) }
+
+            when (type) {
+                LogType.REQUEST -> {
+                    method?.let { put("method", it) }
+                    path?.let { put("path", it) }
+                    queryParams?.let { put("queryParams", it) }
+                    headers?.let { put("headers", it) }
+                }
+                LogType.RESPONSE -> {
+                    statusCode?.let { put("statusCode", it) }
+                    duration?.let { put("duration", it) }
+                }
+            }
         }
 
-    fun RequestLogEntry.toJson(): String = objectMapper.writeValueAsString(toLogMap())
+    fun LogEntry.toJson(): String = objectMapper.writeValueAsString(toLogMap())
 }
