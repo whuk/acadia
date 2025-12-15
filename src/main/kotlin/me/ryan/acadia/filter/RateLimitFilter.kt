@@ -30,6 +30,10 @@ class RateLimitFilter(
         exchange: ServerWebExchange,
         chain: WebFilterChain,
     ): Mono<Void> {
+        if (!properties.enabled) {
+            return chain.filter(exchange)
+        }
+
         val clientIp =
             exchange.request.remoteAddress
                 ?.address
