@@ -31,6 +31,9 @@ logging:
     org.springframework.cloud.gateway: DEBUG
 
 gateway:
+  rate-limit:
+    limit: 10
+    window-ms: 1000
   cors:
     allowed-origins:
       - "https://example.com"
