@@ -63,7 +63,7 @@ Spring Cloud Gateway 기반 API Gateway MVP 구현을 위한 TDD 테스트 계�
 - [x] 7.4 Circuit Breaker 상태 메트릭이 기록된다
 
 ## Phase 8: Rate Limiting (Optional)
-- [ ] 8.1 초당 10 요청 초과 시 429를 반환한다
+- [x] 8.1 초당 10 요청 초과 시 429를 반환한다
 - [ ] 8.2 버스트 20 요청까지 허용된다
 - [ ] 8.3 Rate Limit 헤더가 응답에 포함된다
 
@@ -71,8 +71,8 @@ Spring Cloud Gateway 기반 API Gateway MVP 구현을 위한 TDD 테스트 계�
 
 ## 진행 상태
 - 총 테스트: 40개
-- 완료: 37개
-- 진행률: 92.5%
+- 완료: 38개
+- 진행률: 95%
 
 ## 사용법
 ```
