@@ -71,7 +71,7 @@ Spring Cloud Gateway 기반 API Gateway MVP 구현을 위한 TDD 테스트 계�
 - [x] 8.6 Rate Limiting이 비활성화되면 Rate Limit 헤더가 응답에 포함되지 않는다
 
 ## Phase 9: Swagger Aggregation
-- [ ] 9.1 /swagger-ui.html 엔드포인트가 Swagger UI를 반환한다
+- [x] 9.1 /swagger-ui.html 엔드포인트가 Swagger UI를 반환한다
 - [ ] 9.2 /v3/api-docs 엔드포인트가 Gateway의 OpenAPI 스펙을 반환한다
 - [ ] 9.3 등록된 서비스의 api-docs가 Gateway를 통해 프록시된다 (/v3/api-docs/{service-name})
 - [ ] 9.4 Swagger UI 드롭다운에서 각 서비스를 선택할 수 있다
@@ -82,8 +82,8 @@ Spring Cloud Gateway 기반 API Gateway MVP 구현을 위한 TDD 테스트 계�
 
 ## 진행 상태
 - 총 테스트: 49개
-- 완료: 43개
-- 진행률: 87%
+- 완료: 44개
+- 진행률: 89%
 
 ## 사용법
 ```
