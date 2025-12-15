@@ -16,6 +16,10 @@ class RateLimitFilter(
 ) : WebFilter {
     private val requestCounts = ConcurrentHashMap<String, RequestCounter>()
 
+    fun reset() {
+        requestCounts.clear()
+    }
+
     override fun filter(
         exchange: ServerWebExchange,
         chain: WebFilterChain,
@@ -36,7 +40,7 @@ class RateLimitFilter(
                 }
             }!!
 
-        return if (counter.count.get() > properties.limit) {
+        return if (counter.count.get() > properties.burst) {
             exchange.response.statusCode = HttpStatus.TOO_MANY_REQUESTS
             exchange.response.setComplete()
         } else {

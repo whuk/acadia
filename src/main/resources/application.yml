@@ -33,6 +33,7 @@ logging:
 gateway:
   rate-limit:
     limit: 10
+    burst: 20
     window-ms: 1000
   cors:
     allowed-origins:
