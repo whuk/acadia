@@ -26,4 +26,18 @@ class CorsPreflightTest {
             .expectHeader()
             .valueEquals("Access-Control-Allow-Origin", "https://example.com")
     }
+
+    @Test
+    fun `허용되지 않은 Origin은 CORS 오류를 반환한다`() {
+        webTestClient
+            .options()
+            .uri("/api/users/1")
+            .header("Origin", "https://malicious.com")
+            .header("Access-Control-Request-Method", "GET")
+            .exchange()
+            .expectStatus()
+            .isForbidden
+            .expectHeader()
+            .doesNotExist("Access-Control-Allow-Origin")
+    }
 }
