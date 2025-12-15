@@ -1,13 +1,14 @@
 # Phase 8: Rate Limiting (Optional)
 
 ## 목표
-In-Memory 기반 Rate Limiting 구현
+In-Memory 기반 Rate Limiting 구현 (설정으로 on/off 가능)
 
 ## PRD 요구사항
 - 초당 10 요청 (limit)
 - 버스트 20 요청 (burst)
 - 클라이언트 IP 기반 제한
 - Rate Limit 헤더 응답 포함
+- 설정으로 활성화/비활성화 가능 (기본값: 비활성화)
 
 ## 테스트 목록
 
@@ -76,12 +77,48 @@ fun `Rate Limit 리셋 시간이 헤더에 포함된다`() {
 }
 ```
 
+### 8.5 Rate Limiting이 비활성화되면 제한 없이 요청이 통과한다
+```kotlin
+@SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
+@TestPropertySource(properties = ["gateway.rate-limit.enabled=false"])
+class RateLimitDisabledTest {
+    @Test
+    fun `Rate Limiting이 비활성화되면 제한 없이 요청이 통과한다`() {
+        // Given: Rate Limiting이 비활성화됨 (enabled=false)
+        // When: 버스트 허용량(20)을 초과하는 25개 요청
+        // Then: 모든 요청이 200 OK로 통과
+        repeat(25) {
+            webTestClient.get().uri("/actuator/health")
+                .exchange()
+                .expectStatus().isOk
+        }
+    }
+}
+```
+
+### 8.6 Rate Limiting이 비활성화되면 Rate Limit 헤더가 응답에 포함되지 않는다
+```kotlin
+@Test
+fun `Rate Limiting이 비활성화되면 Rate Limit 헤더가 응답에 포함되지 않는다`() {
+    // Given: Rate Limiting이 비활성화됨 (enabled=false)
+    // When: 요청 전송
+    // Then: Rate Limit 헤더들이 응답에 포함되지 않음
+    webTestClient.get().uri("/actuator/health")
+        .exchange()
+        .expectStatus().isOk
+        .expectHeader().doesNotExist(RateLimitFilter.HEADER_LIMIT)
+        .expectHeader().doesNotExist(RateLimitFilter.HEADER_REMAINING)
+        .expectHeader().doesNotExist(RateLimitFilter.HEADER_RESET)
+}
+```
+
 ## 구현
 
 ### RateLimitProperties.kt
 ```kotlin
 @ConfigurationProperties(prefix = "gateway.rate-limit")
 data class RateLimitProperties(
+    val enabled: Boolean = false,
     val limit: Int = 10,
     val burst: Int = 20,
     val windowMs: Long = 1000L,
@@ -110,6 +147,10 @@ class RateLimitFilter(
         exchange: ServerWebExchange,
         chain: WebFilterChain,
     ): Mono<Void> {
+        if (!properties.enabled) {
+            return chain.filter(exchange)
+        }
+
         val clientIp = exchange.request.remoteAddress
             ?.address?.hostAddress ?: "unknown"
         val now = System.currentTimeMillis()
@@ -150,6 +191,7 @@ class RateLimitFilter(
 ```yaml
 gateway:
   rate-limit:
+    enabled: true   # 명시적으로 활성화 필요 (기본값: false)
     limit: 10
     burst: 20
     window-ms: 1000
@@ -164,7 +206,9 @@ gateway:
 | `X-RateLimit-Reset` | 윈도우 리셋 시간 (Unix timestamp, 초) | `1734567890` |
 
 ## 완료 조건
-- [x] 모든 Rate Limiting 테스트 통과
+- [x] 모든 Rate Limiting 테스트 통과 (8.1 ~ 8.6)
 - [x] In-Memory 기반 Rate Limiting 동작
 - [x] Rate Limit 헤더 응답 포함 (Limit, Remaining, Reset)
 - [x] 429 응답 시 요청 차단
+- [x] 설정으로 활성화/비활성화 가능 (enabled 프로퍼티)
+- [x] 비활성화 시 Rate Limit 헤더 미포함
