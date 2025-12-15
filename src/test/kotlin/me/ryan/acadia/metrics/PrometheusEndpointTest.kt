@@ -51,4 +51,30 @@ class PrometheusEndpointTest {
         // Then: HTTP 요청 수 메트릭이 존재
         assertThat(metricsResponse).contains("http_server_requests_seconds_count")
     }
+
+    @Test
+    fun `응답 시간 메트릭이 기록된다`() {
+        // Given: actuator 엔드포인트에 요청
+        webTestClient
+            .get()
+            .uri("/actuator/health")
+            .exchange()
+            .expectStatus()
+            .isOk
+
+        // When: prometheus 메트릭 조회
+        val metricsResponse =
+            webTestClient
+                .get()
+                .uri("/actuator/prometheus")
+                .exchange()
+                .expectStatus()
+                .isOk
+                .expectBody(String::class.java)
+                .returnResult()
+                .responseBody
+
+        // Then: HTTP 응답 시간 메트릭이 존재
+        assertThat(metricsResponse).contains("http_server_requests_seconds_sum")
+    }
 }
