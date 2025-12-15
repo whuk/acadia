@@ -77,4 +77,22 @@ class PrometheusEndpointTest {
         // Then: HTTP 응답 시간 메트릭이 존재
         assertThat(metricsResponse).contains("http_server_requests_seconds_sum")
     }
+
+    @Test
+    fun `Circuit Breaker 상태 메트릭이 기록된다`() {
+        // When: prometheus 메트릭 조회
+        val metricsResponse =
+            webTestClient
+                .get()
+                .uri("/actuator/prometheus")
+                .exchange()
+                .expectStatus()
+                .isOk
+                .expectBody(String::class.java)
+                .returnResult()
+                .responseBody
+
+        // Then: Circuit Breaker 상태 메트릭이 존재
+        assertThat(metricsResponse).contains("resilience4j_circuitbreaker_state")
+    }
 }
