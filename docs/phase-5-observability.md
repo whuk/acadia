@@ -223,7 +223,7 @@ class LoggingFilter : GlobalFilter, Ordered {
 ```
 
 ## 완료 조건
-- [ ] 모든 로깅/트레이싱 테스트 통과
-- [ ] JSON 로그 형식 일관성
-- [ ] Request-Id 생성 및 전달 정상 동작
-- [ ] TraceId/SpanId 전파 정상 동작
+- [x] 모든 로깅/트레이싱 테스트 통과
+- [x] JSON 로그 형식 일관성
+- [x] Request-Id 생성 및 전달 정상 동작
+- [x] TraceId/SpanId 전파 정상 동작
