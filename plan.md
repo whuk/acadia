@@ -68,14 +68,14 @@ Spring Cloud Gateway 기반 API Gateway MVP 구현을 위한 TDD 테스트 계�
 - [x] 8.3 Rate Limit 헤더가 응답에 포함된다
 - [x] 8.4 Rate Limit 리셋 시간이 헤더에 포함된다
 - [x] 8.5 Rate Limiting이 비활성화되면 제한 없이 요청이 통과한다
-- [ ] 8.6 Rate Limiting이 비활성화되면 Rate Limit 헤더가 응답에 포함되지 않는다
+- [x] 8.6 Rate Limiting이 비활성화되면 Rate Limit 헤더가 응답에 포함되지 않는다
 
 ---
 
 ## 진행 상태
 - 총 테스트: 43개
-- 완료: 42개
-- 진행률: 97.7%
+- 완료: 43개
+- 진행률: 100%
 
 ## 사용법
 ```

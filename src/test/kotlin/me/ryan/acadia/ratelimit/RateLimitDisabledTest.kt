@@ -39,4 +39,23 @@ class RateLimitDisabledTest {
                 .isOk
         }
     }
+
+    @Test
+    fun `Rate Limiting이 비활성화되면 Rate Limit 헤더가 응답에 포함되지 않는다`() {
+        // Given: Rate Limiting이 비활성화됨 (enabled=false)
+        // When: 요청 전송
+        // Then: Rate Limit 헤더들이 응답에 포함되지 않음
+        webTestClient
+            .get()
+            .uri("/actuator/health")
+            .exchange()
+            .expectStatus()
+            .isOk
+            .expectHeader()
+            .doesNotExist(RateLimitFilter.HEADER_LIMIT)
+            .expectHeader()
+            .doesNotExist(RateLimitFilter.HEADER_REMAINING)
+            .expectHeader()
+            .doesNotExist(RateLimitFilter.HEADER_RESET)
+    }
 }
