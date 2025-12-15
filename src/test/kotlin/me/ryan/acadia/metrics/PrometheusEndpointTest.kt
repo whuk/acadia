@@ -1,5 +1,6 @@
 package me.ryan.acadia.metrics
 
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
@@ -23,5 +24,31 @@ class PrometheusEndpointTest {
             .isOk
             .expectHeader()
             .contentType("text/plain;version=0.0.4;charset=utf-8")
+    }
+
+    @Test
+    fun `요청 수 메트릭이 기록된다`() {
+        // Given: actuator 엔드포인트에 요청
+        webTestClient
+            .get()
+            .uri("/actuator/health")
+            .exchange()
+            .expectStatus()
+            .isOk
+
+        // When: prometheus 메트릭 조회
+        val metricsResponse =
+            webTestClient
+                .get()
+                .uri("/actuator/prometheus")
+                .exchange()
+                .expectStatus()
+                .isOk
+                .expectBody(String::class.java)
+                .returnResult()
+                .responseBody
+
+        // Then: HTTP 요청 수 메트릭이 존재
+        assertThat(metricsResponse).contains("http_server_requests_seconds_count")
     }
 }
