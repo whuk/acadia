@@ -31,6 +31,18 @@ logging:
     org.springframework.cloud.gateway: DEBUG
 
 gateway:
+  cors:
+    allowed-origins:
+      - "https://example.com"
+    allowed-methods:
+      - GET
+      - POST
+      - PUT
+      - DELETE
+    allowed-headers:
+      - "*"
+    allow-credentials: true
+    max-age: 3600
   logging:
     enabled: false
     storage: none  # none | file | db
