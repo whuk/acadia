@@ -65,14 +65,15 @@ Spring Cloud Gateway 기반 API Gateway MVP 구현을 위한 TDD 테스트 계�
 ## Phase 8: Rate Limiting (Optional)
 - [x] 8.1 초당 10 요청 초과 시 429를 반환한다
 - [x] 8.2 버스트 20 요청까지 허용된다
-- [ ] 8.3 Rate Limit 헤더가 응답에 포함된다
+- [x] 8.3 Rate Limit 헤더가 응답에 포함된다
+- [x] 8.4 Rate Limit 리셋 시간이 헤더에 포함된다
 
 ---
 
 ## 진행 상태
-- 총 테스트: 40개
-- 완료: 39개
-- 진행률: 97.5%
+- 총 테스트: 41개
+- 완료: 41개
+- 진행률: 100%
 
 ## 사용법
 ```

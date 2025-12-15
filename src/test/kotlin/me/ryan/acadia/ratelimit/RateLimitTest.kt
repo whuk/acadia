@@ -45,4 +45,34 @@ class RateLimitTest {
             .expectStatus()
             .isEqualTo(HttpStatus.TOO_MANY_REQUESTS)
     }
+
+    @Test
+    fun `Rate Limit 헤더가 응답에 포함된다`() {
+        // When: 요청 전송
+        // Then: Rate Limit 헤더들이 응답에 포함됨
+        webTestClient
+            .get()
+            .uri("/actuator/health")
+            .exchange()
+            .expectStatus()
+            .isOk
+            .expectHeader()
+            .exists(RateLimitFilter.HEADER_LIMIT)
+            .expectHeader()
+            .exists(RateLimitFilter.HEADER_REMAINING)
+    }
+
+    @Test
+    fun `Rate Limit 리셋 시간이 헤더에 포함된다`() {
+        // When: 요청 전송
+        // Then: X-RateLimit-Reset 헤더가 응답에 포함됨
+        webTestClient
+            .get()
+            .uri("/actuator/health")
+            .exchange()
+            .expectStatus()
+            .isOk
+            .expectHeader()
+            .exists(RateLimitFilter.HEADER_RESET)
+    }
 }
