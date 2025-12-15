@@ -1,5 +1,7 @@
 package me.ryan.acadia.ratelimit
 
+import me.ryan.acadia.filter.RateLimitFilter
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
@@ -14,10 +16,18 @@ class RateLimitTest {
     @Autowired
     lateinit var webTestClient: WebTestClient
 
+    @Autowired
+    lateinit var rateLimitFilter: RateLimitFilter
+
+    @BeforeEach
+    fun setUp() {
+        rateLimitFilter.reset()
+    }
+
     @Test
-    fun `초당 10 요청 초과 시 429를 반환한다`() {
-        // Given: 10개 요청 수행
-        repeat(10) {
+    fun `버스트 20 요청까지 허용된다`() {
+        // Given: 버스트 허용량 20개까지 요청
+        repeat(20) {
             webTestClient
                 .get()
                 .uri("/actuator/health")
@@ -26,7 +36,7 @@ class RateLimitTest {
                 .isOk
         }
 
-        // When: 11번째 요청
+        // When: 21번째 요청 (버스트 초과)
         // Then: 429 Too Many Requests 반환
         webTestClient
             .get()
