@@ -16,6 +16,12 @@ class RateLimitFilter(
 ) : WebFilter {
     private val requestCounts = ConcurrentHashMap<String, RequestCounter>()
 
+    companion object {
+        const val HEADER_LIMIT = "X-RateLimit-Limit"
+        const val HEADER_REMAINING = "X-RateLimit-Remaining"
+        const val HEADER_RESET = "X-RateLimit-Reset"
+    }
+
     fun reset() {
         requestCounts.clear()
     }
@@ -40,7 +46,15 @@ class RateLimitFilter(
                 }
             }!!
 
-        return if (counter.count.get() > properties.burst) {
+        val currentCount = counter.count.get()
+        val remaining = (properties.burst - currentCount).coerceAtLeast(0)
+        val resetTime = (counter.windowStart + properties.windowMs) / 1000
+
+        exchange.response.headers.add(HEADER_LIMIT, properties.burst.toString())
+        exchange.response.headers.add(HEADER_REMAINING, remaining.toString())
+        exchange.response.headers.add(HEADER_RESET, resetTime.toString())
+
+        return if (currentCount > properties.burst) {
             exchange.response.statusCode = HttpStatus.TOO_MANY_REQUESTS
             exchange.response.setComplete()
         } else {
