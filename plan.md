@@ -47,7 +47,7 @@ Spring Cloud Gateway 기반 API Gateway MVP 구현을 위한 TDD 테스트 계�
 - [x] 5.2 클라이언트가 보낸 X-Request-Id가 있으면 유지된다
 - [x] 5.3 요청 로그가 JSON 형식으로 기록된다
 - [x] 5.4 응답 로그가 JSON 형식으로 기록된다
-- [ ] 5.5 TraceId가 백엔드로 전달된다
+- [x] 5.5 TraceId가 백엔드로 전달된다
 - [ ] 5.6 SpanId가 백엔드로 전달된다
 
 ## Phase 6: CORS & 보안
