@@ -51,7 +51,7 @@ Spring Cloud Gateway 기반 API Gateway MVP 구현을 위한 TDD 테스트 계�
 - [x] 5.6 SpanId가 백엔드로 전달된다
 
 ## Phase 6: CORS & 보안
-- [ ] 6.1 허용된 Origin에서 CORS preflight 요청이 성공한다
+- [x] 6.1 허용된 Origin에서 CORS preflight 요청이 성공한다
 - [ ] 6.2 허용되지 않은 Origin은 CORS 오류를 반환한다
 - [ ] 6.3 허용된 HTTP 메서드만 CORS 응답에 포함된다
 - [ ] 6.4 credentials가 허용된다
