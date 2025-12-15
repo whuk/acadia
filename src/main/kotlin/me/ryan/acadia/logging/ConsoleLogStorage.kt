@@ -7,12 +7,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.stereotype.Component
 
 @Component
-@ConditionalOnProperty(
-    prefix = "gateway.logging",
-    name = ["storage"],
-    havingValue = "none",
-    matchIfMissing = true,
-)
+@ConditionalOnProperty(prefix = "gateway.logging", name = ["enabled"], havingValue = "true")
 class ConsoleLogStorage : LogStorage {
     private val logger = LoggerFactory.getLogger(ConsoleLogStorage::class.java)
 
