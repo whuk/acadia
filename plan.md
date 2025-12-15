@@ -59,7 +59,7 @@ Spring Cloud Gateway 기반 API Gateway MVP 구현을 위한 TDD 테스트 계�
 ## Phase 7: Prometheus 메트릭
 - [x] 7.1 /actuator/prometheus 엔드포인트가 메트릭을 반환한다
 - [x] 7.2 요청 수 메트릭이 기록된다
-- [ ] 7.3 응답 시간 메트릭이 기록된다
+- [x] 7.3 응답 시간 메트릭이 기록된다
 - [ ] 7.4 Circuit Breaker 상태 메트릭이 기록된다
 
 ## Phase 8: Rate Limiting (Optional)
