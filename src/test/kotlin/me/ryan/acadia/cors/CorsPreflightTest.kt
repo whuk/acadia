@@ -54,4 +54,18 @@ class CorsPreflightTest {
             .expectHeader()
             .valueEquals("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE")
     }
+
+    @Test
+    fun `credentials가 허용된다`() {
+        webTestClient
+            .options()
+            .uri("/api/users/1")
+            .header("Origin", "https://example.com")
+            .header("Access-Control-Request-Method", "GET")
+            .exchange()
+            .expectStatus()
+            .isOk
+            .expectHeader()
+            .valueEquals("Access-Control-Allow-Credentials", "true")
+    }
 }
