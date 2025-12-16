@@ -16,6 +16,7 @@ data class GatewayProperties(
         val stripPrefix: Int = 1,
         val hasPublicPath: Boolean = false,
         val swaggerEnabled: Boolean = true,
+        val swaggerGroups: List<String> = emptyList(),
     )
 
     data class RetryConfig(
