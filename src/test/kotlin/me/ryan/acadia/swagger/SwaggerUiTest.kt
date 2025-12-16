@@ -240,6 +240,41 @@ class SwaggerFallbackGroupsTest {
 @SpringBootTest(
     webEnvironment = WebEnvironment.RANDOM_PORT,
     properties = [
+        "gateway.services[0].name=no-groups-service",
+        "gateway.services[0].path=/api/nogroups/**",
+        "gateway.services[0].url=http://localhost:9998",
+    ],
+)
+@AutoConfigureWebTestClient
+class SwaggerNoGroupsTest {
+    @Autowired
+    lateinit var webTestClient: WebTestClient
+
+    @Test
+    fun `그룹이 없는 서비스는 기존처럼 서비스 단위로 URL이 생성된다`() {
+        // Given - service has no dynamic groups (unreachable) and no static swaggerGroups
+
+        // When & Then - swagger config should use service-only URL format
+        webTestClient
+            .get()
+            .uri("/v3/api-docs/swagger-config")
+            .exchange()
+            .expectStatus()
+            .isOk
+            .expectBody()
+            .jsonPath("$.urls[?(@.name == 'no-groups-service')]")
+            .exists()
+            .jsonPath("$.urls[?(@.name == 'no-groups-service')].url")
+            .isEqualTo("/v3/api-docs/no-groups-service")
+            // Verify no group-style URLs exist for this service
+            .jsonPath("$.urls[?(@.name =~ /no-groups-service\\/.*/)]")
+            .doesNotExist()
+    }
+}
+
+@SpringBootTest(
+    webEnvironment = WebEnvironment.RANDOM_PORT,
+    properties = [
         "gateway.services[0].name=grouped-service",
         "gateway.services[0].path=/api/grouped/**",
         "gateway.services[0].url=http://localhost:8091",
