@@ -346,6 +346,90 @@ class SwaggerGroupUrlsTest {
 @SpringBootTest(
     webEnvironment = WebEnvironment.RANDOM_PORT,
     properties = [
+        "gateway.services[0].name=service-with-groups",
+        "gateway.services[0].path=/api/grouped/**",
+        "gateway.services[0].url=http://localhost:8093",
+        "gateway.services[1].name=service-without-groups",
+        "gateway.services[1].path=/api/simple/**",
+        "gateway.services[1].url=http://localhost:9997",
+    ],
+)
+@AutoConfigureWebTestClient
+class SwaggerConfigUrlFormatTest {
+    companion object {
+        private val wireMockServer = WireMockServer(wireMockConfig().port(8093))
+
+        @JvmStatic
+        @BeforeAll
+        fun setupWireMock() {
+            wireMockServer.start()
+
+            val swaggerConfigResponse =
+                """
+                {
+                    "configUrl": "/v3/api-docs/swagger-config",
+                    "urls": [
+                        {"name": "users", "url": "/v3/api-docs/users"},
+                        {"name": "orders", "url": "/v3/api-docs/orders"}
+                    ]
+                }
+                """.trimIndent()
+
+            wireMockServer.stubFor(
+                get(urlEqualTo("/v3/api-docs/swagger-config"))
+                    .willReturn(
+                        aResponse()
+                            .withStatus(200)
+                            .withHeader("Content-Type", "application/json")
+                            .withBody(swaggerConfigResponse),
+                    ),
+            )
+        }
+
+        @JvmStatic
+        @AfterAll
+        fun teardownWireMock() {
+            wireMockServer.stop()
+        }
+    }
+
+    @Autowired
+    lateinit var webTestClient: WebTestClient
+
+    @Test
+    fun `swagger-config에서 서비스 그룹 형식의 URL 목록이 반환된다`() {
+        // When & Then - swagger-config should return:
+        // - service/group format for services with groups
+        // - service-only format for services without groups
+        webTestClient
+            .get()
+            .uri("/v3/api-docs/swagger-config")
+            .exchange()
+            .expectStatus()
+            .isOk
+            .expectHeader()
+            .contentType("application/json")
+            .expectBody()
+            // Verify service/group format URLs for service with groups
+            .jsonPath("$.urls[?(@.name == 'service-with-groups/users')]")
+            .exists()
+            .jsonPath("$.urls[?(@.name == 'service-with-groups/users')].url")
+            .isEqualTo("/v3/api-docs/service-with-groups/users")
+            .jsonPath("$.urls[?(@.name == 'service-with-groups/orders')]")
+            .exists()
+            .jsonPath("$.urls[?(@.name == 'service-with-groups/orders')].url")
+            .isEqualTo("/v3/api-docs/service-with-groups/orders")
+            // Verify service-only format URL for service without groups
+            .jsonPath("$.urls[?(@.name == 'service-without-groups')]")
+            .exists()
+            .jsonPath("$.urls[?(@.name == 'service-without-groups')].url")
+            .isEqualTo("/v3/api-docs/service-without-groups")
+    }
+}
+
+@SpringBootTest(
+    webEnvironment = WebEnvironment.RANDOM_PORT,
+    properties = [
         "gateway.services[0].name=routing-service",
         "gateway.services[0].path=/api/routing/**",
         "gateway.services[0].url=http://localhost:8092",
