@@ -24,4 +24,21 @@ class SwaggerUiTest {
             .expectHeader()
             .location("/swagger-ui/index.html")
     }
+
+    @Test
+    fun `v3 api-docs 엔드포인트가 Gateway의 OpenAPI 스펙을 반환한다`() {
+        webTestClient
+            .get()
+            .uri("/v3/api-docs")
+            .exchange()
+            .expectStatus()
+            .isOk
+            .expectHeader()
+            .contentType("application/json")
+            .expectBody()
+            .jsonPath("$.openapi")
+            .exists()
+            .jsonPath("$.info.title")
+            .exists()
+    }
 }
