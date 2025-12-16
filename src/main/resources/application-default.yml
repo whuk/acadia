@@ -6,16 +6,3 @@ logging:
   level:
     root: INFO
     me.ryan.acadia: DEBUG
-
-gateway:
-  services:
-    - name: staff-gpt
-      path: /api/staff-gpt/**
-      url: http://localhost:8081/api/staff-gpt
-      strip-prefix: 1
-      has-public-path: true
-    - name: file-uploader
-      path: /api/file-uploader-vm/**
-      url: http://localhost:8082/api/file-uploader-vm
-      strip-prefix: 1
-      has-public-path: true
