@@ -19,6 +19,7 @@ object LogEntryFormatter {
                     path?.let { put("path", it) }
                     queryParams?.let { put("queryParams", it) }
                     headers?.let { put("headers", it) }
+                    body?.let { put("body", it) }
                 }
                 LogType.RESPONSE -> {
                     statusCode?.let { put("statusCode", it) }

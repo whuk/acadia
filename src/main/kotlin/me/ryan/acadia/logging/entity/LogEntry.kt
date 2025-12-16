@@ -36,6 +36,8 @@ class LogEntry private constructor(
     val queryParams: String? = null,
     @Column(name = "headers", columnDefinition = "TEXT")
     val headers: String? = null,
+    @Column(name = "body", columnDefinition = "TEXT")
+    val body: String? = null,
     @Column(name = "status_code")
     val statusCode: Int? = null,
     @Column(name = "duration")
@@ -55,6 +57,7 @@ class LogEntry private constructor(
             path: String,
             queryParams: String? = null,
             headers: String? = null,
+            body: String? = null,
         ): LogEntry =
             LogEntry(
                 type = LogType.REQUEST,
@@ -64,6 +67,7 @@ class LogEntry private constructor(
                 path = path,
                 queryParams = queryParams,
                 headers = headers,
+                body = body,
             )
 
         fun response(
