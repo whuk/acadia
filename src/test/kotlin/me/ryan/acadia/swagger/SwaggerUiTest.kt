@@ -5,7 +5,9 @@ import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig
+import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
@@ -193,5 +195,76 @@ class SwaggerDynamicUrlsTest {
             .exists()
             .jsonPath("$.urls[?(@.name == 'service-gamma')].url")
             .isEqualTo("/v3/api-docs/service-gamma")
+    }
+}
+
+@SpringBootTest(
+    webEnvironment = WebEnvironment.RANDOM_PORT,
+    properties = [
+        "gateway.services[0].name=grouped-service",
+        "gateway.services[0].path=/api/grouped/**",
+        "gateway.services[0].url=http://localhost:8091",
+    ],
+)
+@AutoConfigureWebTestClient
+class SwaggerGroupUrlsTest {
+    companion object {
+        private val wireMockServer = WireMockServer(wireMockConfig().port(8091))
+
+        @JvmStatic
+        @BeforeAll
+        fun setupWireMock() {
+            wireMockServer.start()
+
+            val swaggerConfigResponse =
+                """
+                {
+                    "configUrl": "/v3/api-docs/swagger-config",
+                    "urls": [
+                        {"name": "admin", "url": "/v3/api-docs/admin"},
+                        {"name": "public", "url": "/v3/api-docs/public"}
+                    ]
+                }
+                """.trimIndent()
+
+            wireMockServer.stubFor(
+                get(urlEqualTo("/v3/api-docs/swagger-config"))
+                    .willReturn(
+                        aResponse()
+                            .withStatus(200)
+                            .withHeader("Content-Type", "application/json")
+                            .withBody(swaggerConfigResponse),
+                    ),
+            )
+        }
+
+        @JvmStatic
+        @AfterAll
+        fun teardownWireMock() {
+            wireMockServer.stop()
+        }
+    }
+
+    @Autowired
+    lateinit var webTestClient: WebTestClient
+
+    @Test
+    fun `동적으로 가져온 그룹이 Swagger URL에 서비스 그룹 형식으로 추가된다`() {
+        // When & Then - swagger config should include service/group format URLs
+        webTestClient
+            .get()
+            .uri("/v3/api-docs/swagger-config")
+            .exchange()
+            .expectStatus()
+            .isOk
+            .expectBody()
+            .jsonPath("$.urls[?(@.name == 'grouped-service/admin')]")
+            .exists()
+            .jsonPath("$.urls[?(@.name == 'grouped-service/admin')].url")
+            .isEqualTo("/v3/api-docs/grouped-service/admin")
+            .jsonPath("$.urls[?(@.name == 'grouped-service/public')]")
+            .exists()
+            .jsonPath("$.urls[?(@.name == 'grouped-service/public')].url")
+            .isEqualTo("/v3/api-docs/grouped-service/public")
     }
 }
