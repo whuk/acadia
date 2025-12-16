@@ -1,20 +1,24 @@
 package me.ryan.acadia.filter
 
 import io.jsonwebtoken.Claims
+import io.jsonwebtoken.ExpiredJwtException
 import io.jsonwebtoken.JwtException
 import io.jsonwebtoken.Jwts
 import io.jsonwebtoken.security.Keys
 import me.ryan.acadia.common.GatewayHeaders
 import me.ryan.acadia.common.GatewayPaths
 import me.ryan.acadia.config.JwtProperties
+import org.slf4j.LoggerFactory
 import org.springframework.cloud.gateway.filter.GatewayFilterChain
 import org.springframework.cloud.gateway.filter.GlobalFilter
 import org.springframework.core.Ordered
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
+import org.springframework.http.MediaType
 import org.springframework.stereotype.Component
 import org.springframework.web.server.ServerWebExchange
 import reactor.core.publisher.Mono
+import java.time.Instant
 import javax.crypto.SecretKey
 
 @Component
@@ -22,6 +26,8 @@ class JwtAuthenticationFilter(
     private val jwtProperties: JwtProperties,
 ) : GlobalFilter,
     Ordered {
+    private val log = LoggerFactory.getLogger(JwtAuthenticationFilter::class.java)
+
     private val secretKey: SecretKey by lazy {
         Keys.hmacShaKeyFor(jwtProperties.secret.toByteArray())
     }
@@ -42,11 +48,12 @@ class JwtAuthenticationFilter(
 
         val authHeader =
             exchange.request.headers.getFirst(HttpHeaders.AUTHORIZATION)
-                ?: return unauthorized(exchange)
+                ?: return unauthorized(exchange, "Missing Authorization header")
 
-        val token = extractToken(authHeader) ?: return unauthorized(exchange)
+        val token = extractToken(authHeader)
+            ?: return unauthorized(exchange, "Invalid Authorization header format")
 
-        val claims = parseToken(token) ?: return unauthorized(exchange)
+        val claims = parseToken(exchange, token) ?: return Mono.empty()
 
         val roles = extractRoles(claims)
 
@@ -76,7 +83,7 @@ class JwtAuthenticationFilter(
         }
     }
 
-    private fun parseToken(token: String): Claims? =
+    private fun parseToken(exchange: ServerWebExchange, token: String): Claims? =
         try {
             Jwts
                 .parser()
@@ -84,13 +91,26 @@ class JwtAuthenticationFilter(
                 .build()
                 .parseSignedClaims(token)
                 .payload
-        } catch (_: JwtException) {
+        } catch (e: ExpiredJwtException) {
+            unauthorized(exchange, "Token has expired").subscribe()
+            null
+        } catch (e: JwtException) {
+            unauthorized(exchange, "Invalid token").subscribe()
             null
         }
 
-    private fun unauthorized(exchange: ServerWebExchange): Mono<Void> {
+    private fun unauthorized(exchange: ServerWebExchange, message: String): Mono<Void> {
+        val path = exchange.request.path.value()
+        log.warn("Authentication failed for path {}: {}", path, message)
+
         exchange.response.statusCode = HttpStatus.UNAUTHORIZED
-        return exchange.response.setComplete()
+        exchange.response.headers.contentType = MediaType.APPLICATION_JSON
+
+        val timestamp = Instant.now().toString()
+        val body = """{"timestamp":"$timestamp","status":401,"error":"Unauthorized","message":"$message","path":"$path"}"""
+        val buffer = exchange.response.bufferFactory().wrap(body.toByteArray())
+
+        return exchange.response.writeWith(Mono.just(buffer))
     }
 
     override fun getOrder(): Int = -100
