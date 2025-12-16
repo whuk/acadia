@@ -201,6 +201,45 @@ class SwaggerDynamicUrlsTest {
 @SpringBootTest(
     webEnvironment = WebEnvironment.RANDOM_PORT,
     properties = [
+        "gateway.services[0].name=fallback-service",
+        "gateway.services[0].path=/api/fallback/**",
+        "gateway.services[0].url=http://localhost:9999",
+        "gateway.services[0].swagger-groups[0]=static-admin",
+        "gateway.services[0].swagger-groups[1]=static-public",
+    ],
+)
+@AutoConfigureWebTestClient
+class SwaggerFallbackGroupsTest {
+    @Autowired
+    lateinit var webTestClient: WebTestClient
+
+    @Test
+    fun `동적 페칭 실패 시 정적 swaggerGroups 설정을 폴백으로 사용한다`() {
+        // Given - service URL points to non-existent server (port 9999)
+        // Dynamic fetching will fail, should fallback to static swagger-groups
+
+        // When & Then - swagger config should include static fallback groups
+        webTestClient
+            .get()
+            .uri("/v3/api-docs/swagger-config")
+            .exchange()
+            .expectStatus()
+            .isOk
+            .expectBody()
+            .jsonPath("$.urls[?(@.name == 'fallback-service/static-admin')]")
+            .exists()
+            .jsonPath("$.urls[?(@.name == 'fallback-service/static-admin')].url")
+            .isEqualTo("/v3/api-docs/fallback-service/static-admin")
+            .jsonPath("$.urls[?(@.name == 'fallback-service/static-public')]")
+            .exists()
+            .jsonPath("$.urls[?(@.name == 'fallback-service/static-public')].url")
+            .isEqualTo("/v3/api-docs/fallback-service/static-public")
+    }
+}
+
+@SpringBootTest(
+    webEnvironment = WebEnvironment.RANDOM_PORT,
+    properties = [
         "gateway.services[0].name=grouped-service",
         "gateway.services[0].path=/api/grouped/**",
         "gateway.services[0].url=http://localhost:8091",
