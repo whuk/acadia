@@ -118,3 +118,37 @@ class SwaggerUiTest {
             .exists()
     }
 }
+
+@SpringBootTest(
+    webEnvironment = WebEnvironment.RANDOM_PORT,
+    properties = [
+        "gateway.services[0].name=enabled-service",
+        "gateway.services[0].path=/api/enabled/**",
+        "gateway.services[0].url=http://localhost:8081",
+        "gateway.services[0].swagger-enabled=true",
+        "gateway.services[1].name=disabled-service",
+        "gateway.services[1].path=/api/disabled/**",
+        "gateway.services[1].url=http://localhost:8082",
+        "gateway.services[1].swagger-enabled=false",
+    ],
+)
+@AutoConfigureWebTestClient
+class SwaggerDisabledServiceTest {
+    @Autowired
+    lateinit var webTestClient: WebTestClient
+
+    @Test
+    fun `swagger-enabled false인 서비스는 목록에서 제외된다`() {
+        webTestClient
+            .get()
+            .uri("/v3/api-docs/swagger-config")
+            .exchange()
+            .expectStatus()
+            .isOk
+            .expectBody()
+            .jsonPath("$.urls[?(@.name == 'enabled-service')]")
+            .exists()
+            .jsonPath("$.urls[?(@.name == 'disabled-service')]")
+            .doesNotExist()
+    }
+}
