@@ -53,6 +53,13 @@ class RequestLoggingFilter(
                 null
             }
 
+        val body =
+            if (loggingProperties.includeBody) {
+                exchange.getAttribute<String>(CACHED_REQUEST_BODY_ATTR)
+            } else {
+                null
+            }
+
         val logEntry =
             LogEntry.request(
                 timestamp = Instant.now(),
@@ -61,6 +68,7 @@ class RequestLoggingFilter(
                 path = request.path.value(),
                 queryParams = queryParams,
                 headers = headers,
+                body = body,
             )
 
         logStorage.store(logEntry)

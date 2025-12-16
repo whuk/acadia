@@ -50,8 +50,9 @@ class JwtAuthenticationFilter(
             exchange.request.headers.getFirst(HttpHeaders.AUTHORIZATION)
                 ?: return unauthorized(exchange, "Missing Authorization header")
 
-        val token = extractToken(authHeader)
-            ?: return unauthorized(exchange, "Invalid Authorization header format")
+        val token =
+            extractToken(authHeader)
+                ?: return unauthorized(exchange, "Invalid Authorization header format")
 
         val claims = parseToken(exchange, token) ?: return Mono.empty()
 
@@ -83,7 +84,10 @@ class JwtAuthenticationFilter(
         }
     }
 
-    private fun parseToken(exchange: ServerWebExchange, token: String): Claims? =
+    private fun parseToken(
+        exchange: ServerWebExchange,
+        token: String,
+    ): Claims? =
         try {
             Jwts
                 .parser()
@@ -99,7 +103,10 @@ class JwtAuthenticationFilter(
             null
         }
 
-    private fun unauthorized(exchange: ServerWebExchange, message: String): Mono<Void> {
+    private fun unauthorized(
+        exchange: ServerWebExchange,
+        message: String,
+    ): Mono<Void> {
         val path = exchange.request.path.value()
         log.warn("Authentication failed for path {}: {}", path, message)
 
