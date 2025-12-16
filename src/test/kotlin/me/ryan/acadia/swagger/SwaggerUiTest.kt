@@ -98,4 +98,23 @@ class SwaggerUiTest {
             .jsonPath("$.info.title")
             .isEqualTo("User Service API")
     }
+
+    @Test
+    fun `Swagger UI 드롭다운에서 각 서비스를 선택할 수 있다`() {
+        webTestClient
+            .get()
+            .uri("/v3/api-docs/swagger-config")
+            .exchange()
+            .expectStatus()
+            .isOk
+            .expectHeader()
+            .contentType("application/json")
+            .expectBody()
+            .jsonPath("$.urls")
+            .isArray
+            .jsonPath("$.urls[?(@.name == 'user-service')]")
+            .exists()
+            .jsonPath("$.urls[?(@.name == 'order-service')]")
+            .exists()
+    }
 }

@@ -17,6 +17,15 @@ spring:
           httpclient:
             connect-timeout: 1000
             response-timeout: 3s
+
+springdoc:
+  swagger-ui:
+    urls:
+      - name: user-service
+        url: /v3/api-docs/user-service
+      - name: order-service
+        url: /v3/api-docs/order-service
+
 management:
   endpoints:
     web:
