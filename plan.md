@@ -73,7 +73,7 @@ Spring Cloud Gateway 기반 API Gateway MVP 구현을 위한 TDD 테스트 계�
 ## Phase 9: Swagger Aggregation
 - [x] 9.1 /swagger-ui.html 엔드포인트가 Swagger UI를 반환한다
 - [x] 9.2 /v3/api-docs 엔드포인트가 Gateway의 OpenAPI 스펙을 반환한다
-- [ ] 9.3 등록된 서비스의 api-docs가 Gateway를 통해 프록시된다 (/v3/api-docs/{service-name})
+- [x] 9.3 등록된 서비스의 api-docs가 Gateway를 통해 프록시된다 (/v3/api-docs/{service-name})
 - [ ] 9.4 Swagger UI 드롭다운에서 각 서비스를 선택할 수 있다
 - [ ] 9.5 서비스 설정에서 swagger-enabled: false인 서비스는 목록에서 제외된다
 - [ ] 9.6 swagger-ui.urls가 gateway.services 기반으로 동적 생성된다
@@ -82,8 +82,8 @@ Spring Cloud Gateway 기반 API Gateway MVP 구현을 위한 TDD 테스트 계�
 
 ## 진행 상태
 - 총 테스트: 49개
-- 완료: 45개
-- 진행률: 91%
+- 완료: 46개
+- 진행률: 93%
 
 ## 사용법
 ```

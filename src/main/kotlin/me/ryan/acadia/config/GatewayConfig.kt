@@ -1,5 +1,6 @@
 package me.ryan.acadia.config
 
+import me.ryan.acadia.common.GatewayPaths
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.cloud.gateway.route.RouteLocator
 import org.springframework.cloud.gateway.route.builder.GatewayFilterSpec
@@ -15,6 +16,8 @@ class GatewayConfig(
 ) {
     companion object {
         const val CIRCUIT_BREAKER_NAME = "gatewayCircuitBreaker"
+        private const val SWAGGER_ROUTE_PREFIX = "swagger-"
+        private const val PUBLIC_ROUTE_PREFIX = "public-"
     }
 
     @Bean
@@ -22,10 +25,20 @@ class GatewayConfig(
         var routes = builder.routes()
 
         props.services.forEach { service ->
+            // Swagger API docs proxy route
+            routes =
+                routes.route("$SWAGGER_ROUTE_PREFIX${service.name}") { r ->
+                    r
+                        .path("${GatewayPaths.SWAGGER_DOCS}/${service.name}")
+                        .filters { f ->
+                            f.setPath(GatewayPaths.SWAGGER_DOCS)
+                        }.uri(service.url)
+                }
+
             if (service.hasPublicPath) {
-                val publicPath = service.path.replace("/api/", "/api/public/")
+                val publicPath = service.path.replace(GatewayPaths.API_PREFIX, GatewayPaths.PUBLIC_PREFIX)
                 routes =
-                    routes.route("public-${service.name}") { r ->
+                    routes.route("$PUBLIC_ROUTE_PREFIX${service.name}") { r ->
                         r
                             .path(publicPath)
                             .filters { f -> f.applyCommonFilters(service.stripPrefix + 1) }
