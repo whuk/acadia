@@ -5,6 +5,7 @@ import io.jsonwebtoken.JwtException
 import io.jsonwebtoken.Jwts
 import io.jsonwebtoken.security.Keys
 import me.ryan.acadia.common.GatewayHeaders
+import me.ryan.acadia.common.GatewayPaths
 import me.ryan.acadia.config.JwtProperties
 import org.springframework.cloud.gateway.filter.GatewayFilterChain
 import org.springframework.cloud.gateway.filter.GlobalFilter
@@ -28,7 +29,6 @@ class JwtAuthenticationFilter(
     companion object {
         private const val BEARER_PREFIX = "Bearer "
         private const val ROLES_CLAIM = "roles"
-        private const val PUBLIC_PATH_PREFIX = "/api/public/"
     }
 
     override fun filter(
@@ -36,7 +36,7 @@ class JwtAuthenticationFilter(
         chain: GatewayFilterChain,
     ): Mono<Void> {
         val path = exchange.request.path.value()
-        if (path.startsWith(PUBLIC_PATH_PREFIX)) {
+        if (path.startsWith(GatewayPaths.PUBLIC_PREFIX) || path.startsWith(GatewayPaths.SWAGGER_DOCS)) {
             return chain.filter(exchange)
         }
 
