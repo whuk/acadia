@@ -342,3 +342,72 @@ class SwaggerGroupUrlsTest {
             .isEqualTo("/v3/api-docs/grouped-service/public")
     }
 }
+
+@SpringBootTest(
+    webEnvironment = WebEnvironment.RANDOM_PORT,
+    properties = [
+        "gateway.services[0].name=routing-service",
+        "gateway.services[0].path=/api/routing/**",
+        "gateway.services[0].url=http://localhost:8092",
+    ],
+)
+@AutoConfigureWebTestClient
+class SwaggerGroupRoutingTest {
+    companion object {
+        private val wireMockServer = WireMockServer(wireMockConfig().port(8092))
+
+        @JvmStatic
+        @BeforeAll
+        fun setupWireMock() {
+            wireMockServer.start()
+        }
+
+        @JvmStatic
+        @AfterAll
+        fun teardownWireMock() {
+            wireMockServer.stop()
+        }
+    }
+
+    @Autowired
+    lateinit var webTestClient: WebTestClient
+
+    @Test
+    fun `서비스 그룹 요청이 백엔드의 그룹 경로로 라우팅된다`() {
+        // Given - backend responds to /v3/api-docs/admin
+        val adminApiDocs =
+            """
+            {
+                "openapi": "3.0.1",
+                "info": {
+                    "title": "Admin API",
+                    "version": "1.0.0"
+                },
+                "paths": {}
+            }
+            """.trimIndent()
+
+        wireMockServer.stubFor(
+            get(urlEqualTo("/v3/api-docs/admin"))
+                .willReturn(
+                    aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type", "application/json")
+                        .withBody(adminApiDocs),
+                ),
+        )
+
+        // When & Then - /v3/api-docs/routing-service/admin routes to backend's /v3/api-docs/admin
+        webTestClient
+            .get()
+            .uri("/v3/api-docs/routing-service/admin")
+            .exchange()
+            .expectStatus()
+            .isOk
+            .expectHeader()
+            .contentType("application/json")
+            .expectBody()
+            .jsonPath("$.info.title")
+            .isEqualTo("Admin API")
+    }
+}
