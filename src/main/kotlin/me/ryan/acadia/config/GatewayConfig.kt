@@ -25,6 +25,19 @@ class GatewayConfig(
         var routes = builder.routes()
 
         props.services.forEach { service ->
+            // Swagger API docs proxy route for service/group format
+            routes =
+                routes.route("$SWAGGER_ROUTE_PREFIX${service.name}-group") { r ->
+                    r
+                        .path("${GatewayPaths.SWAGGER_DOCS}/${service.name}/{group}")
+                        .filters { f ->
+                            f.rewritePath(
+                                "${GatewayPaths.SWAGGER_DOCS}/${service.name}/(?<group>.*)",
+                                "${GatewayPaths.SWAGGER_DOCS}/\${group}",
+                            )
+                        }.uri(service.url)
+                }
+
             // Swagger API docs proxy route
             routes =
                 routes.route("$SWAGGER_ROUTE_PREFIX${service.name}") { r ->
