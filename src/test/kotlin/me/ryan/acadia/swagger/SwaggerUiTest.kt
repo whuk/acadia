@@ -152,3 +152,46 @@ class SwaggerDisabledServiceTest {
             .doesNotExist()
     }
 }
+
+@SpringBootTest(
+    webEnvironment = WebEnvironment.RANDOM_PORT,
+    properties = [
+        "gateway.services[0].name=service-alpha",
+        "gateway.services[0].path=/api/alpha/**",
+        "gateway.services[0].url=http://localhost:8081",
+        "gateway.services[1].name=service-beta",
+        "gateway.services[1].path=/api/beta/**",
+        "gateway.services[1].url=http://localhost:8082",
+        "gateway.services[2].name=service-gamma",
+        "gateway.services[2].path=/api/gamma/**",
+        "gateway.services[2].url=http://localhost:8083",
+    ],
+)
+@AutoConfigureWebTestClient
+class SwaggerDynamicUrlsTest {
+    @Autowired
+    lateinit var webTestClient: WebTestClient
+
+    @Test
+    fun `swagger-ui urls가 gateway services 기반으로 동적 생성된다`() {
+        webTestClient
+            .get()
+            .uri("/v3/api-docs/swagger-config")
+            .exchange()
+            .expectStatus()
+            .isOk
+            .expectBody()
+            .jsonPath("$.urls[?(@.name == 'service-alpha')]")
+            .exists()
+            .jsonPath("$.urls[?(@.name == 'service-alpha')].url")
+            .isEqualTo("/v3/api-docs/service-alpha")
+            .jsonPath("$.urls[?(@.name == 'service-beta')]")
+            .exists()
+            .jsonPath("$.urls[?(@.name == 'service-beta')].url")
+            .isEqualTo("/v3/api-docs/service-beta")
+            .jsonPath("$.urls[?(@.name == 'service-gamma')]")
+            .exists()
+            .jsonPath("$.urls[?(@.name == 'service-gamma')].url")
+            .isEqualTo("/v3/api-docs/service-gamma")
+    }
+}

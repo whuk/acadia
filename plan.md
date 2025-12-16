@@ -76,14 +76,14 @@ Spring Cloud Gateway 기반 API Gateway MVP 구현을 위한 TDD 테스트 계�
 - [x] 9.3 등록된 서비스의 api-docs가 Gateway를 통해 프록시된다 (/v3/api-docs/{service-name})
 - [x] 9.4 Swagger UI 드롭다운에서 각 서비스를 선택할 수 있다
 - [x] 9.5 서비스 설정에서 swagger-enabled: false인 서비스는 목록에서 제외된다
-- [ ] 9.6 swagger-ui.urls가 gateway.services 기반으로 동적 생성된다
+- [x] 9.6 swagger-ui.urls가 gateway.services 기반으로 동적 생성된다
 
 ---
 
 ## 진행 상태
 - 총 테스트: 49개
-- 완료: 48개
-- 진행률: 98%
+- 완료: 49개
+- 진행률: 100%
 
 ## 사용법
 ```
