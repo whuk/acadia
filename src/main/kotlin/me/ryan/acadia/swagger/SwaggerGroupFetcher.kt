@@ -17,7 +17,7 @@ class SwaggerGroupFetcher(
             .bodyToMono(SwaggerConfigResponse::class.java)
             .map { response ->
                 response.urls.map { it.name }
-            }
+            }.onErrorReturn(emptyList())
 
     private data class SwaggerConfigResponse(
         val urls: List<SwaggerUrl> = emptyList(),

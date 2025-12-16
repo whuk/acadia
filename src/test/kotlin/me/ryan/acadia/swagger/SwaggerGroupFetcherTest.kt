@@ -65,4 +65,21 @@ class SwaggerGroupFetcherTest {
         // Then
         assertThat(groups).containsExactlyInAnyOrder("admin", "public")
     }
+
+    @Test
+    fun `서비스 연결 실패 시 빈 목록을 반환한다`() {
+        // Given - service URL points to non-existent server
+        val service =
+            ServiceConfig(
+                name = "unavailable-service",
+                path = "/api/unavailable/**",
+                url = "http://localhost:9999",
+            )
+
+        // When
+        val groups = swaggerGroupFetcher.fetchGroups(service).block()
+
+        // Then
+        assertThat(groups).isEmpty()
+    }
 }
