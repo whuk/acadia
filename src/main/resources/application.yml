@@ -50,7 +50,7 @@ gateway:
     allow-credentials: true
     max-age: 3600
   logging:
-    enabled: false
+    enabled: true
     storage: none  # none | file | db
     include-headers: false
     include-query-params: true

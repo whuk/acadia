@@ -87,12 +87,21 @@ Spring Cloud Gateway 기반 API Gateway MVP 구현을 위한 TDD 테스트 계�
 - [x] 10.6 /v3/api-docs/{service}/{group} 요청이 백엔드의 /v3/api-docs/{group}으로 라우팅된다
 - [x] 10.7 Swagger UI swagger-config에서 서비스/그룹 형식의 URL 목록이 반환된다
 
+## Phase 11: 요청/응답 바디 로깅
+- [ ] 11.1 요청 바디가 JSON 형식으로 로그에 기록된다
+- [ ] 11.2 응답 바디가 JSON 형식으로 로그에 기록된다
+- [ ] 11.3 바디 로깅은 설정으로 활성화/비활성화할 수 있다 (include-body: true/false)
+- [ ] 11.4 바디 크기가 설정된 최대 크기를 초과하면 잘라서 기록된다 (max-body-size)
+- [ ] 11.5 민감한 필드는 마스킹 처리된다 (password, token 등)
+- [ ] 11.6 multipart/form-data 요청은 바디 로깅에서 제외된다
+- [ ] 11.7 응답 헤더가 로그에 기록된다
+
 ---
 
 ## 진행 상태
-- 총 테스트: 56개
+- 총 테스트: 63개
 - 완료: 56개
-- 진행률: 100%
+- 진행률: 89%
 
 ## 사용법
 ```
