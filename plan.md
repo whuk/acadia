@@ -79,7 +79,7 @@ Spring Cloud Gateway 기반 API Gateway MVP 구현을 위한 TDD 테스트 계�
 - [x] 9.6 swagger-ui.urls가 gateway.services 기반으로 동적 생성된다
 
 ## Phase 10: Swagger 그룹 통합
-- [ ] 10.1 SwaggerGroupFetcher가 서비스의 swagger-config에서 그룹 목록을 가져온다
+- [x] 10.1 SwaggerGroupFetcher가 서비스의 swagger-config에서 그룹 목록을 가져온다
 - [ ] 10.2 서비스 연결 실패 시 빈 목록을 반환한다
 - [ ] 10.3 동적으로 가져온 그룹이 Swagger URL에 서비스/그룹 형식으로 추가된다
 - [ ] 10.4 동적 페칭 실패 시 정적 swaggerGroups 설정을 폴백으로 사용한다
