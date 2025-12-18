@@ -8,6 +8,7 @@ import org.springframework.cloud.gateway.filter.GlobalFilter
 import org.springframework.core.Ordered
 import org.springframework.core.io.buffer.DataBuffer
 import org.springframework.core.io.buffer.DataBufferUtils
+import org.springframework.http.MediaType
 import org.springframework.http.server.reactive.ServerHttpRequest
 import org.springframework.http.server.reactive.ServerHttpRequestDecorator
 import org.springframework.stereotype.Component
@@ -30,6 +31,12 @@ class CachedBodyGatewayFilter(
         chain: GatewayFilterChain,
     ): Mono<Void> {
         if (!loggingProperties.includeBody) {
+            return chain.filter(exchange)
+        }
+
+        // Skip body caching for multipart/form-data requests
+        val contentType = exchange.request.headers.contentType
+        if (contentType != null && contentType.isCompatibleWith(MediaType.MULTIPART_FORM_DATA)) {
             return chain.filter(exchange)
         }
 
