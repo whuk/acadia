@@ -14,13 +14,14 @@ import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment
 import org.springframework.boot.test.system.CapturedOutput
 import org.springframework.boot.test.system.OutputCaptureExtension
+import org.springframework.boot.webtestclient.autoconfigure.AutoConfigureWebTestClient
 import org.springframework.http.HttpHeaders
 import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
 import org.springframework.test.web.reactive.server.WebTestClient
 
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
-@org.springframework.boot.webtestclient.autoconfigure.AutoConfigureWebTestClient
+@AutoConfigureWebTestClient
 @ExtendWith(OutputCaptureExtension::class)
 class ResponseLoggingTest {
     companion object {
