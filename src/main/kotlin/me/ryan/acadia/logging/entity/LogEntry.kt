@@ -75,6 +75,7 @@ class LogEntry private constructor(
             requestId: String?,
             statusCode: Int,
             duration: Long,
+            body: String? = null,
         ): LogEntry =
             LogEntry(
                 type = LogType.RESPONSE,
@@ -82,6 +83,7 @@ class LogEntry private constructor(
                 requestId = requestId,
                 statusCode = statusCode,
                 duration = duration,
+                body = body,
             )
     }
 }

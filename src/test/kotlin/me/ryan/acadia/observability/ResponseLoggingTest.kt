@@ -55,6 +55,8 @@ class ResponseLoggingTest {
             .exchange()
             .expectStatus()
             .isOk
+            .expectBody()
+            .returnResult()
 
         val logOutput = output.toString()
 
