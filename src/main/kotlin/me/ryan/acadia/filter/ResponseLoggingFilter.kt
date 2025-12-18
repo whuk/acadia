@@ -3,6 +3,7 @@ package me.ryan.acadia.filter
 import me.ryan.acadia.common.GatewayHeaders
 import me.ryan.acadia.config.LoggingProperties
 import me.ryan.acadia.logging.LogStorage
+import me.ryan.acadia.logging.SensitiveFieldMasker
 import me.ryan.acadia.logging.entity.LogEntry
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.boot.context.properties.EnableConfigurationProperties
@@ -70,7 +71,10 @@ class ResponseLoggingFilter(
         val duration = endTime.toEpochMilli() - startTime.toEpochMilli()
         val requestId = exchange.response.headers.getFirst(GatewayHeaders.X_REQUEST_ID)
 
-        val truncatedBody = body?.truncateIfNeeded(loggingProperties.maxBodySize)
+        val truncatedBody =
+            body
+                ?.let { SensitiveFieldMasker.mask(it) }
+                ?.truncateIfNeeded(loggingProperties.maxBodySize)
 
         val logEntry =
             LogEntry.response(

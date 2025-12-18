@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import me.ryan.acadia.common.GatewayHeaders
 import me.ryan.acadia.config.LoggingProperties
 import me.ryan.acadia.logging.LogStorage
+import me.ryan.acadia.logging.SensitiveFieldMasker
 import me.ryan.acadia.logging.entity.LogEntry
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.boot.context.properties.EnableConfigurationProperties
@@ -55,7 +56,10 @@ class RequestLoggingFilter(
 
         val body =
             if (loggingProperties.includeBody) {
-                exchange.getAttribute<String>(CACHED_REQUEST_BODY_ATTR)?.truncateIfNeeded(loggingProperties.maxBodySize)
+                exchange
+                    .getAttribute<String>(CACHED_REQUEST_BODY_ATTR)
+                    ?.let { SensitiveFieldMasker.mask(it) }
+                    ?.truncateIfNeeded(loggingProperties.maxBodySize)
             } else {
                 null
             }
