@@ -36,6 +36,7 @@ class ResponseLoggingTest {
             registry.add("gateway.services[0].path") { "/api/users/**" }
             registry.add("gateway.services[0].url") { wireMock.baseUrl() }
             registry.add("gateway.logging.enabled") { true }
+            registry.add("gateway.logging.include-headers") { true }
         }
     }
 
@@ -66,5 +67,36 @@ class ResponseLoggingTest {
         assertThat(logOutput).contains("\"statusCode\":200")
         assertThat(logOutput).contains("\"requestId\":")
         assertThat(logOutput).contains("\"duration\":")
+    }
+
+    @Test
+    fun `응답 헤더가 로그에 기록된다`(output: CapturedOutput) {
+        wireMock.stubFor(
+            get(urlPathMatching("/users/.*"))
+                .willReturn(
+                    ok()
+                        .withBody("""{"id": 1}""")
+                        .withHeader("X-Custom-Header", "custom-value")
+                        .withHeader("Content-Type", "application/json"),
+                ),
+        )
+
+        webTestClient
+            .get()
+            .uri("/api/users/1")
+            .header(HttpHeaders.AUTHORIZATION, JwtTestSupport.validAuthHeader())
+            .exchange()
+            .expectStatus()
+            .isOk
+            .expectBody()
+            .returnResult()
+
+        val logOutput = output.toString()
+
+        // Verify response headers are logged
+        assertThat(logOutput).contains("\"type\":\"RESPONSE\"")
+        assertThat(logOutput).contains("\"headers\":")
+        assertThat(logOutput).contains("X-Custom-Header")
+        assertThat(logOutput).contains("custom-value")
     }
 }

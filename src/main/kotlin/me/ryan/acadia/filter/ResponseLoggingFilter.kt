@@ -1,5 +1,6 @@
 package me.ryan.acadia.filter
 
+import com.fasterxml.jackson.databind.ObjectMapper
 import me.ryan.acadia.common.GatewayHeaders
 import me.ryan.acadia.config.LoggingProperties
 import me.ryan.acadia.logging.LogStorage
@@ -12,6 +13,7 @@ import org.springframework.cloud.gateway.filter.GlobalFilter
 import org.springframework.cloud.gateway.filter.NettyWriteResponseFilter
 import org.springframework.cloud.gateway.filter.factory.rewrite.ModifyResponseBodyGatewayFilterFactory
 import org.springframework.core.Ordered
+import org.springframework.http.HttpHeaders
 import org.springframework.stereotype.Component
 import org.springframework.web.server.ServerWebExchange
 import reactor.core.publisher.Mono
@@ -26,6 +28,8 @@ class ResponseLoggingFilter(
     private val modifyResponseBodyFilterFactory: ModifyResponseBodyGatewayFilterFactory,
 ) : GlobalFilter,
     Ordered {
+    private val objectMapper = ObjectMapper().findAndRegisterModules()
+
     companion object {
         const val RESPONSE_BODY_ATTR = "cachedResponseBody"
     }
@@ -76,17 +80,27 @@ class ResponseLoggingFilter(
                 ?.let { SensitiveFieldMasker.mask(it) }
                 ?.truncateIfNeeded(loggingProperties.maxBodySize)
 
+        val responseHeaders =
+            if (loggingProperties.includeHeaders) {
+                formatHeaders(exchange.response.headers)
+            } else {
+                null
+            }
+
         val logEntry =
             LogEntry.response(
                 timestamp = endTime,
                 requestId = requestId,
                 statusCode = exchange.response.statusCode?.value() ?: 0,
                 duration = duration,
+                headers = responseHeaders,
                 body = truncatedBody,
             )
 
         logStorage.store(logEntry)
     }
+
+    private fun formatHeaders(headers: HttpHeaders): String = objectMapper.writeValueAsString(headers.toSingleValueMap())
 
     private fun String.truncateIfNeeded(maxSize: Int): String =
         if (length > maxSize) {
