@@ -109,3 +109,89 @@ class BodyLoggingTest {
         assertThat(logOutput).contains("created")
     }
 }
+
+@SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
+@AutoConfigureWebTestClient
+@ExtendWith(OutputCaptureExtension::class)
+class BodyLoggingDisabledTest {
+    companion object {
+        @JvmField
+        @RegisterExtension
+        val wireMock: WireMockExtension = WireMockExtension.newInstance().build()
+
+        @JvmStatic
+        @DynamicPropertySource
+        fun configureProperties(registry: DynamicPropertyRegistry) {
+            registry.add("gateway.services[0].name") { "user-service" }
+            registry.add("gateway.services[0].path") { "/api/users/**" }
+            registry.add("gateway.services[0].url") { wireMock.baseUrl() }
+            registry.add("gateway.logging.enabled") { true }
+            registry.add("gateway.logging.include-body") { false }
+        }
+    }
+
+    @Autowired
+    lateinit var webTestClient: WebTestClient
+
+    @Test
+    fun `바디 로깅이 비활성화되면 요청 바디가 로그에 포함되지 않는다`(output: CapturedOutput) {
+        val requestBody = """{"username": "testuser", "secret": "password123"}"""
+
+        wireMock.stubFor(
+            post(urlPathMatching("/users"))
+                .willReturn(ok().withBody("""{"id": 1}""")),
+        )
+
+        webTestClient
+            .post()
+            .uri("/api/users")
+            .header(HttpHeaders.AUTHORIZATION, JwtTestSupport.validAuthHeader())
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(requestBody)
+            .exchange()
+            .expectStatus()
+            .isOk
+
+        Thread.sleep(100)
+
+        val logOutput = output.toString()
+
+        // Verify request log exists but body is not included
+        assertThat(logOutput).contains("\"type\":\"REQUEST\"")
+        assertThat(logOutput).doesNotContain("testuser")
+        assertThat(logOutput).doesNotContain("password123")
+    }
+
+    @Test
+    fun `바디 로깅이 비활성화되면 응답 바디가 로그에 포함되지 않는다`(output: CapturedOutput) {
+        val responseBody = """{"id": 456, "status": "success"}"""
+
+        wireMock.stubFor(
+            post(urlPathMatching("/users"))
+                .willReturn(
+                    ok()
+                        .withHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                        .withBody(responseBody),
+                ),
+        )
+
+        webTestClient
+            .post()
+            .uri("/api/users")
+            .header(HttpHeaders.AUTHORIZATION, JwtTestSupport.validAuthHeader())
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue("""{"username": "test"}""")
+            .exchange()
+            .expectStatus()
+            .isOk
+
+        Thread.sleep(100)
+
+        val logOutput = output.toString()
+
+        // Verify response log exists but body is not included
+        assertThat(logOutput).contains("\"type\":\"RESPONSE\"")
+        assertThat(logOutput).doesNotContain("456")
+        assertThat(logOutput).doesNotContain("success")
+    }
+}
