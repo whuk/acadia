@@ -93,15 +93,15 @@ Spring Cloud Gateway 기반 API Gateway MVP 구현을 위한 TDD 테스트 계�
 - [x] 11.3 바디 로깅은 설정으로 활성화/비활성화할 수 있다 (include-body: true/false)
 - [x] 11.4 바디 크기가 설정된 최대 크기를 초과하면 잘라서 기록된다 (max-body-size)
 - [x] 11.5 민감한 필드는 마스킹 처리된다 (password, token 등)
-- [ ] 11.6 multipart/form-data 요청은 바디 로깅에서 제외된다
+- [x] 11.6 multipart/form-data 요청은 바디 로깅에서 제외된다
 - [ ] 11.7 응답 헤더가 로그에 기록된다
 
 ---
 
 ## 진행 상태
 - 총 테스트: 63개
-- 완료: 61개
-- 진행률: 97%
+- 완료: 62개
+- 진행률: 98%
 
 ## 사용법
 ```
