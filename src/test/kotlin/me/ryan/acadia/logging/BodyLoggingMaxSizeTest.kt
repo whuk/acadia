@@ -1,6 +1,5 @@
 package me.ryan.acadia.logging
 
-import com.github.tomakehurst.wiremock.client.WireMock.containing
 import com.github.tomakehurst.wiremock.client.WireMock.ok
 import com.github.tomakehurst.wiremock.client.WireMock.post
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
@@ -27,7 +26,7 @@ import org.springframework.test.web.reactive.server.WebTestClient
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
 @AutoConfigureWebTestClient
 @ExtendWith(OutputCaptureExtension::class)
-class BodyLoggingTest {
+class BodyLoggingMaxSizeTest {
     companion object {
         @JvmField
         @RegisterExtension
@@ -41,6 +40,7 @@ class BodyLoggingTest {
             registry.add("gateway.services[0].url") { wireMock.baseUrl() }
             registry.add("gateway.logging.enabled") { true }
             registry.add("gateway.logging.include-body") { true }
+            registry.add("gateway.logging.max-body-size") { 50 }
         }
     }
 
@@ -48,12 +48,12 @@ class BodyLoggingTest {
     lateinit var webTestClient: WebTestClient
 
     @Test
-    fun `요청 바디가 JSON 형식으로 로그에 기록된다`(output: CapturedOutput) {
-        val requestBody = """{"username": "testuser", "email": "test@example.com"}"""
+    fun `요청 바디 크기가 최대 크기를 초과하면 잘라서 기록된다`(output: CapturedOutput) {
+        // Create a body larger than 50 bytes
+        val requestBody = """{"username": "verylongusername", "email": "verylongemail@example.com", "extra": "data"}"""
 
         wireMock.stubFor(
             post(urlPathMatching("/users"))
-                .withHeader(HttpHeaders.CONTENT_TYPE, containing(MediaType.APPLICATION_JSON_VALUE))
                 .willReturn(ok().withBody("""{"id": 1}""")),
         )
 
@@ -69,16 +69,18 @@ class BodyLoggingTest {
 
         val logOutput = output.toString()
 
-        // Verify request body is logged in JSON format
+        // Verify request body is truncated and contains truncation indicator
         assertThat(logOutput).contains("\"type\":\"REQUEST\"")
         assertThat(logOutput).contains("\"body\":")
-        assertThat(logOutput).contains("testuser")
-        assertThat(logOutput).contains("test@example.com")
+        assertThat(logOutput).contains("...[TRUNCATED]")
+        // The truncated body should not contain the end of the original body
+        assertThat(logOutput).doesNotContain("extra")
     }
 
     @Test
-    fun `응답 바디가 JSON 형식으로 로그에 기록된다`(output: CapturedOutput) {
-        val responseBody = """{"id": 123, "status": "created"}"""
+    fun `응답 바디 크기가 최대 크기를 초과하면 잘라서 기록된다`(output: CapturedOutput) {
+        // Create a response body larger than 50 bytes
+        val responseBody = """{"id": 123, "status": "created", "message": "This is a very long message that exceeds the limit"}"""
 
         wireMock.stubFor(
             post(urlPathMatching("/users"))
@@ -94,18 +96,19 @@ class BodyLoggingTest {
             .uri("/api/users")
             .header(HttpHeaders.AUTHORIZATION, JwtTestSupport.validAuthHeader())
             .contentType(MediaType.APPLICATION_JSON)
-            .bodyValue("""{"username": "test"}""")
+            .bodyValue("""{"test": "data"}""")
             .exchange()
             .expectStatus()
             .isOk
 
-        // Verify response body is logged in JSON format
+        // Verify response body is truncated and contains truncation indicator
         await untilAsserted {
             val logOutput = output.toString()
             assertThat(logOutput).contains("\"type\":\"RESPONSE\"")
             assertThat(logOutput).contains("\"body\":")
-            assertThat(logOutput).contains("123")
-            assertThat(logOutput).contains("created")
+            assertThat(logOutput).contains("...[TRUNCATED]")
+            // The truncated body should not contain the end of the original body
+            assertThat(logOutput).doesNotContain("exceeds the limit")
         }
     }
 }
