@@ -55,7 +55,7 @@ class RequestLoggingFilter(
 
         val body =
             if (loggingProperties.includeBody) {
-                exchange.getAttribute<String>(CACHED_REQUEST_BODY_ATTR)
+                exchange.getAttribute<String>(CACHED_REQUEST_BODY_ATTR)?.truncateIfNeeded(loggingProperties.maxBodySize)
             } else {
                 null
             }
@@ -75,6 +75,13 @@ class RequestLoggingFilter(
 
         return chain.filter(exchange)
     }
+
+    private fun String.truncateIfNeeded(maxSize: Int): String =
+        if (length > maxSize) {
+            substring(0, maxSize) + "...[TRUNCATED]"
+        } else {
+            this
+        }
 
     override fun getOrder(): Int = Ordered.HIGHEST_PRECEDENCE + 1
 }

@@ -9,6 +9,7 @@ data class LoggingProperties(
     val includeHeaders: Boolean = false,
     val includeQueryParams: Boolean = true,
     val includeBody: Boolean = false,
+    val maxBodySize: Int = 10000,
     val file: FileProperties = FileProperties(),
 ) {
     enum class StorageType {

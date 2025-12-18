@@ -1,6 +1,5 @@
 package me.ryan.acadia.logging
 
-import com.github.tomakehurst.wiremock.client.WireMock.containing
 import com.github.tomakehurst.wiremock.client.WireMock.ok
 import com.github.tomakehurst.wiremock.client.WireMock.post
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
@@ -27,7 +26,7 @@ import org.springframework.test.web.reactive.server.WebTestClient
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
 @AutoConfigureWebTestClient
 @ExtendWith(OutputCaptureExtension::class)
-class BodyLoggingTest {
+class BodyLoggingDisabledTest {
     companion object {
         @JvmField
         @RegisterExtension
@@ -40,7 +39,7 @@ class BodyLoggingTest {
             registry.add("gateway.services[0].path") { "/api/users/**" }
             registry.add("gateway.services[0].url") { wireMock.baseUrl() }
             registry.add("gateway.logging.enabled") { true }
-            registry.add("gateway.logging.include-body") { true }
+            registry.add("gateway.logging.include-body") { false }
         }
     }
 
@@ -48,12 +47,11 @@ class BodyLoggingTest {
     lateinit var webTestClient: WebTestClient
 
     @Test
-    fun `요청 바디가 JSON 형식으로 로그에 기록된다`(output: CapturedOutput) {
-        val requestBody = """{"username": "testuser", "email": "test@example.com"}"""
+    fun `바디 로깅이 비활성화되면 요청 바디가 로그에 포함되지 않는다`(output: CapturedOutput) {
+        val requestBody = """{"username": "testuser", "secret": "password123"}"""
 
         wireMock.stubFor(
             post(urlPathMatching("/users"))
-                .withHeader(HttpHeaders.CONTENT_TYPE, containing(MediaType.APPLICATION_JSON_VALUE))
                 .willReturn(ok().withBody("""{"id": 1}""")),
         )
 
@@ -67,18 +65,18 @@ class BodyLoggingTest {
             .expectStatus()
             .isOk
 
-        val logOutput = output.toString()
-
-        // Verify request body is logged in JSON format
-        assertThat(logOutput).contains("\"type\":\"REQUEST\"")
-        assertThat(logOutput).contains("\"body\":")
-        assertThat(logOutput).contains("testuser")
-        assertThat(logOutput).contains("test@example.com")
+        // Verify request log exists but body is not included
+        await untilAsserted {
+            val logOutput = output.toString()
+            assertThat(logOutput).contains("\"type\":\"REQUEST\"")
+            assertThat(logOutput).doesNotContain("testuser")
+            assertThat(logOutput).doesNotContain("password123")
+        }
     }
 
     @Test
-    fun `응답 바디가 JSON 형식으로 로그에 기록된다`(output: CapturedOutput) {
-        val responseBody = """{"id": 123, "status": "created"}"""
+    fun `바디 로깅이 비활성화되면 응답 바디가 로그에 포함되지 않는다`(output: CapturedOutput) {
+        val responseBody = """{"id": 456, "status": "success"}"""
 
         wireMock.stubFor(
             post(urlPathMatching("/users"))
@@ -99,13 +97,12 @@ class BodyLoggingTest {
             .expectStatus()
             .isOk
 
-        // Verify response body is logged in JSON format
+        // Verify response log exists but body is not included
         await untilAsserted {
             val logOutput = output.toString()
             assertThat(logOutput).contains("\"type\":\"RESPONSE\"")
-            assertThat(logOutput).contains("\"body\":")
-            assertThat(logOutput).contains("123")
-            assertThat(logOutput).contains("created")
+            assertThat(logOutput).doesNotContain("456")
+            assertThat(logOutput).doesNotContain("success")
         }
     }
 }

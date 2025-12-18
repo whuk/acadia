@@ -70,17 +70,26 @@ class ResponseLoggingFilter(
         val duration = endTime.toEpochMilli() - startTime.toEpochMilli()
         val requestId = exchange.response.headers.getFirst(GatewayHeaders.X_REQUEST_ID)
 
+        val truncatedBody = body?.truncateIfNeeded(loggingProperties.maxBodySize)
+
         val logEntry =
             LogEntry.response(
                 timestamp = endTime,
                 requestId = requestId,
                 statusCode = exchange.response.statusCode?.value() ?: 0,
                 duration = duration,
-                body = body,
+                body = truncatedBody,
             )
 
         logStorage.store(logEntry)
     }
+
+    private fun String.truncateIfNeeded(maxSize: Int): String =
+        if (length > maxSize) {
+            substring(0, maxSize) + "...[TRUNCATED]"
+        } else {
+            this
+        }
 
     override fun getOrder(): Int = NettyWriteResponseFilter.WRITE_RESPONSE_FILTER_ORDER - 1
 }
