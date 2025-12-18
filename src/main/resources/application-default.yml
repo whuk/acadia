@@ -7,15 +7,15 @@ logging:
     root: INFO
     me.ryan.acadia: DEBUG
 
-gateway:
-  services:
-    - name: staff-gpt
-      path: /api/staff-gpt/**
-      url: http://localhost:8081
-      strip-prefix: 2
-      has-public-path: true
-    - name: file-uploader
-      path: /api/file-uploader/**
-      url: http://localhost:8082
-      strip-prefix: 2
-      has-public-path: false
+#gateway:
+#  services:
+#    - name: staff-gpt
+#      path: /api/staff-gpt/**
+#      url: http://localhost:8081
+#      strip-prefix: 2
+#      has-public-path: true
+#    - name: file-uploader
+#      path: /api/file-uploader/**
+#      url: http://localhost:8082
+#      strip-prefix: 2
+#      has-public-path: false

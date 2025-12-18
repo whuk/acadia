@@ -24,6 +24,7 @@ object LogEntryFormatter {
                 LogType.RESPONSE -> {
                     statusCode?.let { put("statusCode", it) }
                     duration?.let { put("duration", it) }
+                    body?.let { put("body", it) }
                 }
             }
         }

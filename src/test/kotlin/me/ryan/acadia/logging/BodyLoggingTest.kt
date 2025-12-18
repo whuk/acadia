@@ -73,4 +73,39 @@ class BodyLoggingTest {
         assertThat(logOutput).contains("testuser")
         assertThat(logOutput).contains("test@example.com")
     }
+
+    @Test
+    fun `응답 바디가 JSON 형식으로 로그에 기록된다`(output: CapturedOutput) {
+        val responseBody = """{"id": 123, "status": "created"}"""
+
+        wireMock.stubFor(
+            post(urlPathMatching("/users"))
+                .willReturn(
+                    ok()
+                        .withHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                        .withBody(responseBody),
+                ),
+        )
+
+        webTestClient
+            .post()
+            .uri("/api/users")
+            .header(HttpHeaders.AUTHORIZATION, JwtTestSupport.validAuthHeader())
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue("""{"username": "test"}""")
+            .exchange()
+            .expectStatus()
+            .isOk
+
+        // Wait for async logging to complete
+        Thread.sleep(100)
+
+        val logOutput = output.toString()
+
+        // Verify response body is logged in JSON format
+        assertThat(logOutput).contains("\"type\":\"RESPONSE\"")
+        assertThat(logOutput).contains("\"body\":")
+        assertThat(logOutput).contains("123")
+        assertThat(logOutput).contains("created")
+    }
 }
