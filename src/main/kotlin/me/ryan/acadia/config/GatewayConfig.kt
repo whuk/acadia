@@ -16,6 +16,7 @@ import org.springframework.http.HttpStatus
 import org.springframework.web.servlet.function.RequestPredicates.path
 import org.springframework.web.servlet.function.RouterFunction
 import org.springframework.web.servlet.function.ServerResponse
+import java.util.Optional
 
 @Configuration
 @EnableConfigurationProperties(GatewayProperties::class)
@@ -89,7 +90,10 @@ class GatewayConfig(
                     ).build()
         }
 
-        return routes.reduce { acc, r -> acc.and(r) }
+        // REL-3b: tolerate an empty service list instead of crashing startup on reduce().
+        // The fallback is a RouterFunction that matches nothing.
+        return routes.reduceOrNull { acc, r -> acc.and(r) }
+            ?: RouterFunction<ServerResponse> { Optional.empty() }
     }
 }
 

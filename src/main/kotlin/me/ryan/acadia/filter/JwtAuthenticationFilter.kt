@@ -12,6 +12,7 @@ import jakarta.servlet.http.HttpServletResponse
 import me.ryan.acadia.common.GatewayHeaders
 import me.ryan.acadia.common.GatewayPaths
 import me.ryan.acadia.common.HeaderInjectingRequestWrapper
+import me.ryan.acadia.common.RequestPaths
 import me.ryan.acadia.config.JwtProperties
 import org.slf4j.LoggerFactory
 import org.springframework.core.annotation.Order
@@ -47,7 +48,7 @@ class JwtAuthenticationFilter(
     // (actuator, swagger-ui, /v3/api-docs) and CORS preflight are not.
     override fun shouldNotFilter(request: HttpServletRequest): Boolean {
         if (request.method.equals("OPTIONS", ignoreCase = true)) return true
-        return !request.requestURI.startsWith(GatewayPaths.API_PREFIX)
+        return !RequestPaths.gatewayRelative(request).startsWith(GatewayPaths.API_PREFIX)
     }
 
     override fun doFilterInternal(
@@ -55,7 +56,7 @@ class JwtAuthenticationFilter(
         response: HttpServletResponse,
         filterChain: FilterChain,
     ) {
-        val path = request.requestURI
+        val path = RequestPaths.gatewayRelative(request)
 
         if (isPublicPath(path)) {
             // Even on public paths, strip client-supplied trusted headers (SEC-2).
