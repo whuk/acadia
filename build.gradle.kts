@@ -21,6 +21,9 @@ repositories {
 
 dependencies {
     implementation("org.springframework.cloud:spring-cloud-starter-gateway-server-webmvc")
+    // Apache HttpComponents for the proxy client: HTTP/1.1 (no h2c upgrade) and a per-read idle
+    // socket timeout that supports long-lived streaming (SSE) instead of a total-response timeout.
+    implementation("org.apache.httpcomponents.client5:httpclient5")
     implementation("org.springframework.cloud:spring-cloud-starter-circuitbreaker-resilience4j")
     implementation("org.springframework.retry:spring-retry")
     implementation("org.springframework.boot:spring-boot-starter-actuator")
