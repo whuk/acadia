@@ -10,7 +10,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.springframework.web.reactive.function.client.WebClient
+import org.springframework.web.client.RestClient
 
 class SwaggerGroupFetcherTest {
     private lateinit var wireMockServer: WireMockServer
@@ -20,7 +20,7 @@ class SwaggerGroupFetcherTest {
     fun setup() {
         wireMockServer = WireMockServer(wireMockConfig().port(8091))
         wireMockServer.start()
-        swaggerGroupFetcher = SwaggerGroupFetcher(WebClient.builder().build())
+        swaggerGroupFetcher = SwaggerGroupFetcher(RestClient.builder().build())
     }
 
     @AfterEach
@@ -60,7 +60,7 @@ class SwaggerGroupFetcherTest {
             )
 
         // When
-        val groups = swaggerGroupFetcher.fetchGroups(service).block()
+        val groups = swaggerGroupFetcher.fetchGroups(service)
 
         // Then
         assertThat(groups).containsExactlyInAnyOrder("admin", "public")
@@ -77,7 +77,7 @@ class SwaggerGroupFetcherTest {
             )
 
         // When
-        val groups = swaggerGroupFetcher.fetchGroups(service).block()
+        val groups = swaggerGroupFetcher.fetchGroups(service)
 
         // Then
         assertThat(groups).isEmpty()

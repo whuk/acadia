@@ -8,25 +8,25 @@ import org.springframework.context.annotation.Primary
 import org.springframework.stereotype.Component
 
 /**
- * Composite log storage that always outputs to console and optionally to database.
+ * Composite log storage that always outputs to console and optionally to a file.
  * Console logging is always performed regardless of storage configuration.
- * Database storage is only performed when storage type is DB.
+ * File storage is only performed when storage type is FILE.
  */
 @Component
 @Primary
 @ConditionalOnProperty(prefix = "gateway.logging", name = ["enabled"], havingValue = "true")
 class CompositeLogStorage(
     private val consoleLogStorage: ConsoleLogStorage,
-    private val databaseLogStorage: DatabaseLogStorage?,
+    private val fileLogStorage: FileLogStorage?,
     private val loggingProperties: LoggingProperties,
 ) : LogStorage {
     override fun store(entry: LogEntry) {
         // Always log to console
         consoleLogStorage.store(entry)
 
-        // Conditionally store to database
-        if (loggingProperties.storage == StorageType.DB) {
-            databaseLogStorage?.store(entry)
+        // Conditionally store to file
+        if (loggingProperties.storage == StorageType.FILE) {
+            fileLogStorage?.store(entry)
         }
     }
 }

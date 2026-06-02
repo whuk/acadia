@@ -1,63 +1,83 @@
 package me.ryan.acadia.filter
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import jakarta.servlet.FilterChain
+import jakarta.servlet.http.HttpServletRequest
+import jakarta.servlet.http.HttpServletResponse
 import me.ryan.acadia.common.GatewayHeaders
 import me.ryan.acadia.config.LoggingProperties
 import me.ryan.acadia.logging.LogStorage
 import me.ryan.acadia.logging.SensitiveFieldMasker
+import me.ryan.acadia.logging.SensitiveHeaders
 import me.ryan.acadia.logging.entity.LogEntry
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.boot.context.properties.EnableConfigurationProperties
-import org.springframework.cloud.gateway.filter.GatewayFilterChain
-import org.springframework.cloud.gateway.filter.GlobalFilter
-import org.springframework.core.Ordered
-import org.springframework.http.HttpHeaders
+import org.springframework.core.annotation.Order
 import org.springframework.stereotype.Component
-import org.springframework.web.server.ServerWebExchange
-import reactor.core.publisher.Mono
+import org.springframework.web.filter.OncePerRequestFilter
+import org.springframework.web.util.ContentCachingRequestWrapper
+import org.springframework.web.util.WebUtils
+import java.nio.charset.StandardCharsets
 import java.time.Instant
 
 @Component
 @ConditionalOnProperty(prefix = "gateway.logging", name = ["enabled"], havingValue = "true")
 @EnableConfigurationProperties(LoggingProperties::class)
+@Order(FilterOrders.REQUEST_LOGGING)
 class RequestLoggingFilter(
     private val loggingProperties: LoggingProperties,
     private val logStorage: LogStorage,
-) : GlobalFilter,
-    Ordered {
+) : OncePerRequestFilter() {
     private val objectMapper = ObjectMapper().findAndRegisterModules()
 
-    override fun filter(
-        exchange: ServerWebExchange,
-        chain: GatewayFilterChain,
-    ): Mono<Void> {
-        val request = exchange.request
+    override fun doFilterInternal(
+        request: HttpServletRequest,
+        response: HttpServletResponse,
+        filterChain: FilterChain,
+    ) {
+        if (loggingProperties.includeBody) {
+            // Body is only available after it is read for downstream forwarding,
+            // so log after routing.
+            try {
+                filterChain.doFilter(request, response)
+            } finally {
+                logRequest(request, response)
+            }
+        } else {
+            // No body needed: log before routing (deterministic, no response-timing race).
+            logRequest(request, response)
+            filterChain.doFilter(request, response)
+        }
+    }
+
+    private fun logRequest(
+        request: HttpServletRequest,
+        response: HttpServletResponse,
+    ) {
         val requestId =
-            request.headers.getFirst(GatewayHeaders.X_REQUEST_ID)
-                ?: exchange.response.headers.getFirst(GatewayHeaders.X_REQUEST_ID)
+            request.getHeader(GatewayHeaders.X_REQUEST_ID)
+                ?: response.getHeader(GatewayHeaders.X_REQUEST_ID)
 
         val queryParams =
-            if (loggingProperties.includeQueryParams && request.queryParams.isNotEmpty()) {
-                objectMapper.writeValueAsString(request.queryParams.toSingleValueMap())
+            if (loggingProperties.includeQueryParams && request.parameterMap.isNotEmpty()) {
+                objectMapper.writeValueAsString(
+                    request.parameterMap.mapValues { it.value.firstOrNull() ?: "" },
+                )
             } else {
                 null
             }
 
         val headers =
             if (loggingProperties.includeHeaders) {
-                val filteredHeaders =
-                    request.headers
-                        .toSingleValueMap()
-                        .filterKeys { !it.equals(HttpHeaders.AUTHORIZATION, ignoreCase = true) }
-                objectMapper.writeValueAsString(filteredHeaders)
+                val headerMap = request.headerNames.asSequence().associateWith { request.getHeader(it) }
+                objectMapper.writeValueAsString(SensitiveHeaders.mask(headerMap))
             } else {
                 null
             }
 
         val body =
             if (loggingProperties.includeBody) {
-                exchange
-                    .getAttribute<String>(CACHED_REQUEST_BODY_ATTR)
+                cachedRequestBody(request)
                     ?.let { SensitiveFieldMasker.mask(it) }
                     ?.truncateIfNeeded(loggingProperties.maxBodySize)
             } else {
@@ -68,16 +88,20 @@ class RequestLoggingFilter(
             LogEntry.request(
                 timestamp = Instant.now(),
                 requestId = requestId,
-                method = request.method.name(),
-                path = request.path.value(),
+                method = request.method,
+                path = request.requestURI,
                 queryParams = queryParams,
                 headers = headers,
                 body = body,
             )
 
         logStorage.store(logEntry)
+    }
 
-        return chain.filter(exchange)
+    private fun cachedRequestBody(request: HttpServletRequest): String? {
+        val cached = WebUtils.getNativeRequest(request, ContentCachingRequestWrapper::class.java) ?: return null
+        val bytes = cached.contentAsByteArray
+        return if (bytes.isEmpty()) null else String(bytes, StandardCharsets.UTF_8)
     }
 
     private fun String.truncateIfNeeded(maxSize: Int): String =
@@ -86,6 +110,4 @@ class RequestLoggingFilter(
         } else {
             this
         }
-
-    override fun getOrder(): Int = Ordered.HIGHEST_PRECEDENCE + 1
 }

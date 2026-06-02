@@ -18,7 +18,7 @@ class SwaggerConfig(
         gatewayProperties.services
             .filter { it.swaggerEnabled }
             .forEach { service ->
-                val dynamicGroups = swaggerGroupFetcher.fetchGroups(service).block() ?: emptyList()
+                val dynamicGroups = swaggerGroupFetcher.fetchGroups(service)
                 val groups = dynamicGroups.ifEmpty { service.swaggerGroups }
                 if (groups.isNotEmpty()) {
                     groups.forEach { group ->

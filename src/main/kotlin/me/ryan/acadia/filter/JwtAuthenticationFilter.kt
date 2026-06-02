@@ -1,32 +1,35 @@
 package me.ryan.acadia.filter
 
+import com.fasterxml.jackson.databind.ObjectMapper
 import io.jsonwebtoken.Claims
 import io.jsonwebtoken.ExpiredJwtException
 import io.jsonwebtoken.JwtException
 import io.jsonwebtoken.Jwts
 import io.jsonwebtoken.security.Keys
+import jakarta.servlet.FilterChain
+import jakarta.servlet.http.HttpServletRequest
+import jakarta.servlet.http.HttpServletResponse
 import me.ryan.acadia.common.GatewayHeaders
 import me.ryan.acadia.common.GatewayPaths
+import me.ryan.acadia.common.HeaderInjectingRequestWrapper
 import me.ryan.acadia.config.JwtProperties
 import org.slf4j.LoggerFactory
-import org.springframework.cloud.gateway.filter.GatewayFilterChain
-import org.springframework.cloud.gateway.filter.GlobalFilter
-import org.springframework.core.Ordered
+import org.springframework.core.annotation.Order
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.stereotype.Component
-import org.springframework.web.server.ServerWebExchange
-import reactor.core.publisher.Mono
+import org.springframework.web.filter.OncePerRequestFilter
 import java.time.Instant
 import javax.crypto.SecretKey
 
 @Component
+@Order(FilterOrders.JWT_AUTH)
 class JwtAuthenticationFilter(
     private val jwtProperties: JwtProperties,
-) : GlobalFilter,
-    Ordered {
+) : OncePerRequestFilter() {
     private val log = LoggerFactory.getLogger(JwtAuthenticationFilter::class.java)
+    private val objectMapper = ObjectMapper().findAndRegisterModules()
 
     private val secretKey: SecretKey by lazy {
         Keys.hmacShaKeyFor(jwtProperties.secret.toByteArray())
@@ -35,41 +38,72 @@ class JwtAuthenticationFilter(
     companion object {
         private const val BEARER_PREFIX = "Bearer "
         private const val ROLES_CLAIM = "roles"
+
+        // Trusted headers the gateway controls; always neutralized from inbound requests (SEC-2).
+        private val TRUSTED_HEADERS = setOf(GatewayHeaders.X_USER_ID, GatewayHeaders.X_USER_ROLES)
     }
 
-    override fun filter(
-        exchange: ServerWebExchange,
-        chain: GatewayFilterChain,
-    ): Mono<Void> {
-        val path = exchange.request.path.value()
-        if (path.startsWith(GatewayPaths.PUBLIC_PREFIX) || path.startsWith(GatewayPaths.SWAGGER_DOCS)) {
-            return chain.filter(exchange)
+    // Only gateway-proxied API paths are authenticated. Gateway's own endpoints
+    // (actuator, swagger-ui, /v3/api-docs) and CORS preflight are not.
+    override fun shouldNotFilter(request: HttpServletRequest): Boolean {
+        if (request.method.equals("OPTIONS", ignoreCase = true)) return true
+        return !request.requestURI.startsWith(GatewayPaths.API_PREFIX)
+    }
+
+    override fun doFilterInternal(
+        request: HttpServletRequest,
+        response: HttpServletResponse,
+        filterChain: FilterChain,
+    ) {
+        val path = request.requestURI
+
+        if (isPublicPath(path)) {
+            // Even on public paths, strip client-supplied trusted headers (SEC-2).
+            filterChain.doFilter(stripTrustedHeaders(request), response)
+            return
         }
 
-        val authHeader =
-            exchange.request.headers.getFirst(HttpHeaders.AUTHORIZATION)
-                ?: return unauthorized(exchange, "Missing Authorization header")
+        val authHeader = request.getHeader(HttpHeaders.AUTHORIZATION)
+        if (authHeader == null) {
+            unauthorized(response, path, "Missing Authorization header")
+            return
+        }
 
-        val token =
-            extractToken(authHeader)
-                ?: return unauthorized(exchange, "Invalid Authorization header format")
+        val token = extractToken(authHeader)
+        if (token == null) {
+            unauthorized(response, path, "Invalid Authorization header format")
+            return
+        }
 
-        val claims = parseToken(exchange, token) ?: return Mono.empty()
+        val claims =
+            try {
+                parseToken(token)
+            } catch (e: ExpiredJwtException) {
+                unauthorized(response, path, "Token has expired")
+                return
+            } catch (e: JwtException) {
+                unauthorized(response, path, "Invalid token")
+                return
+            }
 
         val roles = extractRoles(claims)
 
-        val mutatedExchange =
-            exchange
-                .mutate()
-                .request { request ->
-                    request.header(GatewayHeaders.X_USER_ID, claims.subject)
-                    if (roles.isNotEmpty()) {
-                        request.header(GatewayHeaders.X_USER_ROLES, roles.joinToString(","))
-                    }
-                }.build()
+        // SEC-2: always override X-User-Id, and remove X-User-Roles unless derived from the verified token.
+        val injected = mutableMapOf(GatewayHeaders.X_USER_ID to claims.subject)
+        val removed = mutableSetOf<String>()
+        if (roles.isNotEmpty()) {
+            injected[GatewayHeaders.X_USER_ROLES] = roles.joinToString(",")
+        } else {
+            removed.add(GatewayHeaders.X_USER_ROLES)
+        }
 
-        return chain.filter(mutatedExchange)
+        filterChain.doFilter(HeaderInjectingRequestWrapper(request, injected, removed), response)
     }
+
+    private fun isPublicPath(path: String): Boolean = path.startsWith(GatewayPaths.PUBLIC_PREFIX)
+
+    private fun stripTrustedHeaders(request: HttpServletRequest): HttpServletRequest =
+        HeaderInjectingRequestWrapper(request, removedHeaders = TRUSTED_HEADERS)
 
     private fun extractToken(authHeader: String): String? =
         authHeader
@@ -84,41 +118,35 @@ class JwtAuthenticationFilter(
         }
     }
 
-    private fun parseToken(
-        exchange: ServerWebExchange,
-        token: String,
-    ): Claims? =
-        try {
-            Jwts
-                .parser()
-                .verifyWith(secretKey)
-                .build()
-                .parseSignedClaims(token)
-                .payload
-        } catch (e: ExpiredJwtException) {
-            unauthorized(exchange, "Token has expired").subscribe()
-            null
-        } catch (e: JwtException) {
-            unauthorized(exchange, "Invalid token").subscribe()
-            null
-        }
+    private fun parseToken(token: String): Claims =
+        Jwts
+            .parser()
+            .verifyWith(secretKey)
+            .build()
+            .parseSignedClaims(token)
+            .payload
 
     private fun unauthorized(
-        exchange: ServerWebExchange,
+        response: HttpServletResponse,
+        path: String,
         message: String,
-    ): Mono<Void> {
-        val path = exchange.request.path.value()
+    ) {
         log.warn("Authentication failed for path {}: {}", path, message)
 
-        exchange.response.statusCode = HttpStatus.UNAUTHORIZED
-        exchange.response.headers.contentType = MediaType.APPLICATION_JSON
+        response.status = HttpStatus.UNAUTHORIZED.value()
+        response.contentType = MediaType.APPLICATION_JSON_VALUE
 
-        val timestamp = Instant.now().toString()
-        val body = """{"timestamp":"$timestamp","status":401,"error":"Unauthorized","message":"$message","path":"$path"}"""
-        val buffer = exchange.response.bufferFactory().wrap(body.toByteArray())
-
-        return exchange.response.writeWith(Mono.just(buffer))
+        // SEC-5: build the body via JSON serialization, not string interpolation.
+        val body =
+            objectMapper.writeValueAsString(
+                linkedMapOf(
+                    "timestamp" to Instant.now().toString(),
+                    "status" to HttpStatus.UNAUTHORIZED.value(),
+                    "error" to "Unauthorized",
+                    "message" to message,
+                    "path" to path,
+                ),
+            )
+        response.writer.write(body)
     }
-
-    override fun getOrder(): Int = -100
 }

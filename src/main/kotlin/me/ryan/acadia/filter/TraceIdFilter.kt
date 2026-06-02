@@ -1,31 +1,26 @@
 package me.ryan.acadia.filter
 
+import jakarta.servlet.FilterChain
+import jakarta.servlet.http.HttpServletRequest
+import jakarta.servlet.http.HttpServletResponse
 import me.ryan.acadia.common.GatewayHeaders
-import org.springframework.cloud.gateway.filter.GatewayFilterChain
-import org.springframework.cloud.gateway.filter.GlobalFilter
-import org.springframework.core.Ordered
+import me.ryan.acadia.common.HeaderInjectingRequestWrapper
+import org.springframework.core.annotation.Order
 import org.springframework.stereotype.Component
-import org.springframework.web.server.ServerWebExchange
-import reactor.core.publisher.Mono
+import org.springframework.web.filter.OncePerRequestFilter
 import java.util.UUID
 
 @Component
-class TraceIdFilter :
-    GlobalFilter,
-    Ordered {
-    override fun filter(
-        exchange: ServerWebExchange,
-        chain: GatewayFilterChain,
-    ): Mono<Void> {
+@Order(FilterOrders.TRACE_ID)
+class TraceIdFilter : OncePerRequestFilter() {
+    override fun doFilterInternal(
+        request: HttpServletRequest,
+        response: HttpServletResponse,
+        filterChain: FilterChain,
+    ) {
         val traceId = generateTraceId()
-
-        val mutatedRequest =
-            exchange.request
-                .mutate()
-                .header(GatewayHeaders.X_B3_TRACE_ID, traceId)
-                .build()
-
-        return chain.filter(exchange.mutate().request(mutatedRequest).build())
+        val wrapped = HeaderInjectingRequestWrapper(request, mapOf(GatewayHeaders.X_B3_TRACE_ID to traceId))
+        filterChain.doFilter(wrapped, response)
     }
 
     private fun generateTraceId(): String =
@@ -34,6 +29,4 @@ class TraceIdFilter :
             .toString()
             .replace("-", "")
             .substring(0, 16)
-
-    override fun getOrder(): Int = Ordered.HIGHEST_PRECEDENCE + 1
 }

@@ -5,7 +5,7 @@ server:
 gateway:
   logging:
     enabled: true
-    # storage: none | file | db (override as needed)
+    # storage: none | file (override as needed)
 
 logging:
   level:

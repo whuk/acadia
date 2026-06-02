@@ -1,88 +1,78 @@
 package me.ryan.acadia.filter
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import jakarta.servlet.FilterChain
+import jakarta.servlet.http.HttpServletRequest
+import jakarta.servlet.http.HttpServletResponse
 import me.ryan.acadia.common.GatewayHeaders
 import me.ryan.acadia.config.LoggingProperties
 import me.ryan.acadia.logging.LogStorage
 import me.ryan.acadia.logging.SensitiveFieldMasker
+import me.ryan.acadia.logging.SensitiveHeaders
 import me.ryan.acadia.logging.entity.LogEntry
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.boot.context.properties.EnableConfigurationProperties
-import org.springframework.cloud.gateway.filter.GatewayFilterChain
-import org.springframework.cloud.gateway.filter.GlobalFilter
-import org.springframework.cloud.gateway.filter.NettyWriteResponseFilter
-import org.springframework.cloud.gateway.filter.factory.rewrite.ModifyResponseBodyGatewayFilterFactory
-import org.springframework.core.Ordered
-import org.springframework.http.HttpHeaders
+import org.springframework.core.annotation.Order
 import org.springframework.stereotype.Component
-import org.springframework.web.server.ServerWebExchange
-import reactor.core.publisher.Mono
+import org.springframework.web.filter.OncePerRequestFilter
+import org.springframework.web.util.ContentCachingResponseWrapper
+import java.nio.charset.StandardCharsets
 import java.time.Instant
 
 @Component
 @ConditionalOnProperty(prefix = "gateway.logging", name = ["enabled"], havingValue = "true")
 @EnableConfigurationProperties(LoggingProperties::class)
+@Order(FilterOrders.RESPONSE_LOGGING)
 class ResponseLoggingFilter(
     private val logStorage: LogStorage,
     private val loggingProperties: LoggingProperties,
-    private val modifyResponseBodyFilterFactory: ModifyResponseBodyGatewayFilterFactory,
-) : GlobalFilter,
-    Ordered {
+) : OncePerRequestFilter() {
     private val objectMapper = ObjectMapper().findAndRegisterModules()
 
-    companion object {
-        const val RESPONSE_BODY_ATTR = "cachedResponseBody"
-    }
-
-    override fun filter(
-        exchange: ServerWebExchange,
-        chain: GatewayFilterChain,
-    ): Mono<Void> {
+    override fun doFilterInternal(
+        request: HttpServletRequest,
+        response: HttpServletResponse,
+        filterChain: FilterChain,
+    ) {
         val startTime = Instant.now()
 
         if (!loggingProperties.includeBody) {
-            return chain
-                .filter(exchange)
-                .then(
-                    Mono.fromRunnable {
-                        logResponse(exchange, startTime, null)
-                    },
-                )
+            try {
+                filterChain.doFilter(request, response)
+            } finally {
+                logResponse(response, startTime, null)
+            }
+            return
         }
 
-        // Use ModifyResponseBodyGatewayFilterFactory to capture the body
-        val config =
-            ModifyResponseBodyGatewayFilterFactory.Config().apply {
-                setInClass(String::class.java)
-                setOutClass(String::class.java)
-                setRewriteFunction(String::class.java, String::class.java) { ex, body ->
-                    logResponse(ex, startTime, body)
-                    Mono.justOrEmpty(body)
-                }
-            }
-
-        val modifyBodyFilter = modifyResponseBodyFilterFactory.apply(config)
-
-        return modifyBodyFilter.filter(exchange, chain)
+        val wrapped = ContentCachingResponseWrapper(response)
+        try {
+            filterChain.doFilter(request, wrapped)
+        } finally {
+            val body = String(wrapped.contentAsByteArray, StandardCharsets.UTF_8)
+            logResponse(wrapped, startTime, body.ifEmpty { null })
+            wrapped.copyBodyToResponse()
+        }
     }
 
     private fun logResponse(
-        exchange: ServerWebExchange,
+        response: HttpServletResponse,
         startTime: Instant,
         body: String?,
     ) {
         val endTime = Instant.now()
         val duration = endTime.toEpochMilli() - startTime.toEpochMilli()
-        val requestId = exchange.response.headers.getFirst(GatewayHeaders.X_REQUEST_ID)
+        val requestId = response.getHeader(GatewayHeaders.X_REQUEST_ID)
 
         val truncatedBody =
             body
                 ?.let { SensitiveFieldMasker.mask(it) }
                 ?.truncateIfNeeded(loggingProperties.maxBodySize)
 
-        val responseHeaders =
+        val headers =
             if (loggingProperties.includeHeaders) {
-                formatHeaders(exchange.response.headers)
+                val headerMap = response.headerNames.associateWith { response.getHeader(it) }
+                objectMapper.writeValueAsString(SensitiveHeaders.mask(headerMap))
             } else {
                 null
             }
@@ -91,16 +81,14 @@ class ResponseLoggingFilter(
             LogEntry.response(
                 timestamp = endTime,
                 requestId = requestId,
-                statusCode = exchange.response.statusCode?.value() ?: 0,
+                statusCode = response.status,
                 duration = duration,
-                headers = responseHeaders,
+                headers = headers,
                 body = truncatedBody,
             )
 
         logStorage.store(logEntry)
     }
-
-    private fun formatHeaders(headers: HttpHeaders): String = objectMapper.writeValueAsString(headers.toSingleValueMap())
 
     private fun String.truncateIfNeeded(maxSize: Int): String =
         if (length > maxSize) {
@@ -108,6 +96,4 @@ class ResponseLoggingFilter(
         } else {
             this
         }
-
-    override fun getOrder(): Int = NettyWriteResponseFilter.WRITE_RESPONSE_FILTER_ORDER - 1
 }

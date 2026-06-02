@@ -11,47 +11,35 @@ import java.time.Instant
 
 class CompositeLogStorageTest {
     private val consoleLogStorage = mock<ConsoleLogStorage>()
-    private val databaseLogStorage = mock<DatabaseLogStorage>()
+    private val fileLogStorage = mock<FileLogStorage>()
 
     @Test
     fun `storage가 none일 때 콘솔에만 저장한다`() {
         val properties = LoggingProperties(enabled = true, storage = StorageType.NONE)
-        val compositeStorage = CompositeLogStorage(consoleLogStorage, databaseLogStorage, properties)
+        val compositeStorage = CompositeLogStorage(consoleLogStorage, fileLogStorage, properties)
 
         val entry = createTestLogEntry()
         compositeStorage.store(entry)
 
         verify(consoleLogStorage).store(entry)
-        verify(databaseLogStorage, never()).store(entry)
+        verify(fileLogStorage, never()).store(entry)
     }
 
     @Test
-    fun `storage가 db일 때 콘솔과 DB 모두에 저장한다`() {
-        val properties = LoggingProperties(enabled = true, storage = StorageType.DB)
-        val compositeStorage = CompositeLogStorage(consoleLogStorage, databaseLogStorage, properties)
-
-        val entry = createTestLogEntry()
-        compositeStorage.store(entry)
-
-        verify(consoleLogStorage).store(entry)
-        verify(databaseLogStorage).store(entry)
-    }
-
-    @Test
-    fun `storage가 file일 때 콘솔에만 저장한다`() {
+    fun `storage가 file일 때 콘솔과 파일 모두에 저장한다`() {
         val properties = LoggingProperties(enabled = true, storage = StorageType.FILE)
-        val compositeStorage = CompositeLogStorage(consoleLogStorage, databaseLogStorage, properties)
+        val compositeStorage = CompositeLogStorage(consoleLogStorage, fileLogStorage, properties)
 
         val entry = createTestLogEntry()
         compositeStorage.store(entry)
 
         verify(consoleLogStorage).store(entry)
-        verify(databaseLogStorage, never()).store(entry)
+        verify(fileLogStorage).store(entry)
     }
 
     @Test
-    fun `databaseLogStorage가 null이어도 콘솔에는 저장한다`() {
-        val properties = LoggingProperties(enabled = true, storage = StorageType.DB)
+    fun `fileLogStorage가 null이어도 콘솔에는 저장한다`() {
+        val properties = LoggingProperties(enabled = true, storage = StorageType.FILE)
         val compositeStorage = CompositeLogStorage(consoleLogStorage, null, properties)
 
         val entry = createTestLogEntry()

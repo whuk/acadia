@@ -1,40 +1,52 @@
 package me.ryan.acadia.filter
 
-import org.springframework.cloud.gateway.filter.GatewayFilterChain
-import org.springframework.cloud.gateway.filter.GlobalFilter
-import org.springframework.cloud.gateway.filter.NettyWriteResponseFilter
-import org.springframework.core.Ordered
+import jakarta.servlet.FilterChain
+import jakarta.servlet.http.HttpServletRequest
+import jakarta.servlet.http.HttpServletResponse
+import jakarta.servlet.http.HttpServletResponseWrapper
+import org.springframework.core.annotation.Order
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
-import org.springframework.web.server.ServerWebExchange
-import reactor.core.publisher.Mono
+import org.springframework.web.filter.OncePerRequestFilter
 
+/**
+ * Converts backend 5xx responses to 502 Bad Gateway, preserving gateway-originated
+ * 502/503/504 (circuit breaker open -> 503, timeout -> 504). The conversion is done at
+ * the servlet status level because Gateway MVC writes the proxied response status directly.
+ */
 @Component
-class BackendErrorFilter :
-    GlobalFilter,
-    Ordered {
-    override fun filter(
-        exchange: ServerWebExchange,
-        chain: GatewayFilterChain,
-    ): Mono<Void> {
-        exchange.response.beforeCommit {
-            val statusCode = exchange.response.statusCode
-            // Convert backend 5xx errors to 502, but preserve:
-            // - 502 (already a gateway error)
-            // - 503 (Circuit Breaker open state)
-            // - 504 (Gateway Timeout)
-            if (statusCode != null &&
-                statusCode.is5xxServerError &&
-                statusCode != HttpStatus.BAD_GATEWAY &&
-                statusCode != HttpStatus.SERVICE_UNAVAILABLE &&
-                statusCode != HttpStatus.GATEWAY_TIMEOUT
-            ) {
-                exchange.response.setStatusCode(HttpStatus.BAD_GATEWAY)
-            }
-            Mono.empty()
-        }
-        return chain.filter(exchange)
+@Order(FilterOrders.BACKEND_ERROR)
+class BackendErrorFilter : OncePerRequestFilter() {
+    companion object {
+        private val PASSTHROUGH = setOf(502, 503, 504)
     }
 
-    override fun getOrder(): Int = NettyWriteResponseFilter.WRITE_RESPONSE_FILTER_ORDER - 1
+    override fun doFilterInternal(
+        request: HttpServletRequest,
+        response: HttpServletResponse,
+        filterChain: FilterChain,
+    ) {
+        filterChain.doFilter(request, StatusConvertingResponse(response))
+    }
+
+    private class StatusConvertingResponse(
+        response: HttpServletResponse,
+    ) : HttpServletResponseWrapper(response) {
+        override fun setStatus(sc: Int) {
+            super.setStatus(convert(sc))
+        }
+
+        override fun sendError(sc: Int) {
+            super.sendError(convert(sc))
+        }
+
+        override fun sendError(
+            sc: Int,
+            msg: String?,
+        ) {
+            super.sendError(convert(sc), msg)
+        }
+
+        private fun convert(sc: Int): Int = if (sc in 500..599 && sc !in PASSTHROUGH) HttpStatus.BAD_GATEWAY.value() else sc
+    }
 }

@@ -101,7 +101,8 @@ class BodyLoggingDisabledTest {
         await untilAsserted {
             val logOutput = output.toString()
             assertThat(logOutput).contains("\"type\":\"RESPONSE\"")
-            assertThat(logOutput).doesNotContain("456")
+            // Use body-specific patterns; a bare "456" can collide with the duration value (ms).
+            assertThat(logOutput).doesNotContain("\"id\": 456")
             assertThat(logOutput).doesNotContain("success")
         }
     }
