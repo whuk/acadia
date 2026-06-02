@@ -32,6 +32,7 @@
 - Circuit Breaker: `CircuitBreakerFilterFunctions.circuitBreaker { it.setId(...).setStatusCodes(...) }`. 인스턴스 설정은 `application.yml`의 `resilience4j.circuitbreaker.instances.*`에 둔다.
 - Retry: `RetryFilterFunctions.retry { it.setRetries(...).setSeries(...).setMethods(...) }`. `spring-retry` 의존성이 있어야 견고한 retry 구현(`FrameworkRetry`가 아닌)이 선택된다.
 - 타임아웃: `spring.cloud.gateway.server.webmvc.httpclient.connect-timeout`/`read-timeout`으로 설정하며, 초과 시 504가 반환된다.
+- 프록시 다운스트림 클라이언트는 **HTTP/1.1로 고정**한다(`GatewayHttpClientConfig`의 `ClientHttpRequestFactory` 빈). JDK HttpClient 기본값(HTTP/2)은 cleartext에서 h2c 업그레이드(`Upgrade: h2c`, `HTTP2-Settings`)를 시도해 엄격한 HTTP/1.1 백엔드(uvicorn/h11)가 **바디 있는 요청**을 거부한다. `ClientHttpRequestFactory` 빈을 제공하면 Gateway MVC의 `gatewayRestClientCustomizer`가 프록시 RestClient에 적용한다.
 
 ## 6. 에러 응답 통일
 
