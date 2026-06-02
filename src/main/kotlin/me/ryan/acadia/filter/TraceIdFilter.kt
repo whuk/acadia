@@ -3,6 +3,7 @@ package me.ryan.acadia.filter
 import jakarta.servlet.FilterChain
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
+import me.ryan.acadia.common.B3Ids
 import me.ryan.acadia.common.GatewayHeaders
 import me.ryan.acadia.common.HeaderInjectingRequestWrapper
 import org.springframework.core.annotation.Order
@@ -18,6 +19,13 @@ class TraceIdFilter : OncePerRequestFilter() {
         response: HttpServletResponse,
         filterChain: FilterChain,
     ) {
+        // Rule 5: preserve a valid inbound TraceId for trace continuity; otherwise generate one.
+        val inbound = request.getHeader(GatewayHeaders.X_B3_TRACE_ID)
+        if (inbound != null && B3Ids.isValidTraceId(inbound)) {
+            filterChain.doFilter(request, response)
+            return
+        }
+
         val traceId = generateTraceId()
         val wrapped = HeaderInjectingRequestWrapper(request, mapOf(GatewayHeaders.X_B3_TRACE_ID to traceId))
         filterChain.doFilter(wrapped, response)
