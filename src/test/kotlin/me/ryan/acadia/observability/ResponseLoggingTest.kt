@@ -93,10 +93,11 @@ class ResponseLoggingTest {
 
         val logOutput = output.toString()
 
-        // Verify response headers are logged
+        // Verify response headers are logged. Header names are matched case-insensitively because
+        // the HTTP/1.1 proxy client normalizes downstream response header names to lowercase.
         assertThat(logOutput).contains("\"type\":\"RESPONSE\"")
         assertThat(logOutput).contains("\"headers\":")
-        assertThat(logOutput).contains("X-Custom-Header")
+        assertThat(logOutput).containsIgnoringCase("X-Custom-Header")
         assertThat(logOutput).contains("custom-value")
     }
 }
