@@ -51,7 +51,7 @@ class GatewayConfig(
                 route("$SWAGGER_ROUTE_PREFIX${service.name}")
                     .route(path("${GatewayPaths.SWAGGER_DOCS}/${service.name}"), http())
                     .before(uri(service.url))
-                    .before(setPath(GatewayPaths.SWAGGER_DOCS))
+                    .before(setPath(service.docsPath))
                     .build()
 
             // Public (unauthenticated) route
