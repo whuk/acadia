@@ -1,12 +1,14 @@
+# INF-2: LOCAL DEVELOPMENT ONLY. Do not reuse these plaintext credentials in production;
+# use a secrets manager / Docker secrets for any non-local environment.
 services:
   mysql:
     image: mysql:8.0
     container_name: acadia-mysql
     environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: gateway
-      MYSQL_USER: gateway
-      MYSQL_PASSWORD: gateway
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-gateway}
+      MYSQL_USER: ${MYSQL_USER:-gateway}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-gateway}
     ports:
       - "3306:3306"
     volumes:

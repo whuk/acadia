@@ -2,10 +2,25 @@
 server:
   port: 8080
 
+jwt:
+  # SEC-3: production requires JWT_SECRET; startup fails fast if unset.
+  secret: ${JWT_SECRET}
+
 gateway:
   logging:
     enabled: true
-    # storage: none | file | db (configure via GATEWAY_LOGGING_STORAGE env var)
+    # INF-3: storage explicitly set (override via GATEWAY_LOGGING_STORAGE).
+    storage: ${GATEWAY_LOGGING_STORAGE:file}
+
+# SEC-8: restrict actuator exposure in production.
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: when-authorized
 
 logging:
   level:
