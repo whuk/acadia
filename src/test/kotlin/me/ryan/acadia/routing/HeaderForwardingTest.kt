@@ -99,9 +99,11 @@ class HeaderForwardingTest {
             .expectStatus()
             .isOk
 
+        // Gateway/RestClient may append charset; application/json and
+        // application/json;charset=UTF-8 are semantically equivalent.
         wireMock.verify(
             getRequestedFor(urlPathMatching("/users/.*"))
-                .withHeader("Content-Type", equalTo("application/json")),
+                .withHeader("Content-Type", containing("application/json")),
         )
     }
 

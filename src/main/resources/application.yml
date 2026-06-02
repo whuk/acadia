@@ -2,7 +2,10 @@ spring:
   application:
     name: acadia
   main:
-    web-application-type: reactive
+    web-application-type: servlet
+  threads:
+    virtual:
+      enabled: true
   output:
     ansi:
       enabled: always
@@ -13,10 +16,10 @@ spring:
   cloud:
     gateway:
       server:
-        webflux:
+        webmvc:
           httpclient:
             connect-timeout: 1000
-            response-timeout: 3s
+            read-timeout: 3s
 
 management:
   endpoints:
@@ -29,7 +32,11 @@ management:
 
 logging:
   level:
-    org.springframework.cloud.gateway: DEBUG
+    org.springframework.cloud.gateway: INFO
+
+jwt:
+  # Production must provide JWT_SECRET; the default below is for local/dev and tests only.
+  secret: ${JWT_SECRET:default-secret-key-for-testing-purposes-only-32bytes}
 
 gateway:
   rate-limit:

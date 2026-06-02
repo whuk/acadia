@@ -4,8 +4,8 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.web.cors.CorsConfiguration
-import org.springframework.web.cors.reactive.CorsWebFilter
-import org.springframework.web.cors.reactive.UrlBasedCorsConfigurationSource
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource
+import org.springframework.web.filter.CorsFilter
 
 @Configuration
 @EnableConfigurationProperties(CorsProperties::class)
@@ -13,7 +13,7 @@ class CorsConfig(
     private val corsProperties: CorsProperties,
 ) {
     @Bean
-    fun corsWebFilter(): CorsWebFilter {
+    fun corsFilter(): CorsFilter {
         val configuration =
             CorsConfiguration().apply {
                 allowedOrigins = corsProperties.allowedOrigins
@@ -28,6 +28,6 @@ class CorsConfig(
                 registerCorsConfiguration("/api/**", configuration)
             }
 
-        return CorsWebFilter(source)
+        return CorsFilter(source)
     }
 }

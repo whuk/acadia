@@ -1,19 +1,21 @@
 package me.ryan.acadia.filter
 
+import jakarta.servlet.FilterChain
+import jakarta.servlet.http.HttpServletRequest
+import jakarta.servlet.http.HttpServletResponse
 import me.ryan.acadia.config.RateLimitProperties
+import org.springframework.core.annotation.Order
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
-import org.springframework.web.server.ServerWebExchange
-import org.springframework.web.server.WebFilter
-import org.springframework.web.server.WebFilterChain
-import reactor.core.publisher.Mono
+import org.springframework.web.filter.OncePerRequestFilter
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
 
 @Component
+@Order(FilterOrders.RATE_LIMIT)
 class RateLimitFilter(
     private val properties: RateLimitProperties,
-) : WebFilter {
+) : OncePerRequestFilter() {
     private val requestCounts = ConcurrentHashMap<String, RequestCounter>()
 
     companion object {
@@ -26,19 +28,21 @@ class RateLimitFilter(
         requestCounts.clear()
     }
 
-    override fun filter(
-        exchange: ServerWebExchange,
-        chain: WebFilterChain,
-    ): Mono<Void> {
+    override fun doFilterInternal(
+        request: HttpServletRequest,
+        response: HttpServletResponse,
+        filterChain: FilterChain,
+    ) {
         if (!properties.enabled) {
-            return chain.filter(exchange)
+            filterChain.doFilter(request, response)
+            return
         }
 
-        val clientIp =
-            exchange.request.remoteAddress
-                ?.address
-                ?.hostAddress ?: "unknown"
+        val clientIp = request.remoteAddr ?: "unknown"
         val now = System.currentTimeMillis()
+
+        // REL-1: evict expired windows so the map does not grow unbounded.
+        requestCounts.entries.removeIf { now - it.value.windowStart > properties.windowMs }
 
         val counter =
             requestCounts.compute(clientIp) { _, existing ->
@@ -54,16 +58,16 @@ class RateLimitFilter(
         val remaining = (properties.burst - currentCount).coerceAtLeast(0)
         val resetTime = (counter.windowStart + properties.windowMs) / 1000
 
-        exchange.response.headers.add(HEADER_LIMIT, properties.burst.toString())
-        exchange.response.headers.add(HEADER_REMAINING, remaining.toString())
-        exchange.response.headers.add(HEADER_RESET, resetTime.toString())
+        response.addHeader(HEADER_LIMIT, properties.burst.toString())
+        response.addHeader(HEADER_REMAINING, remaining.toString())
+        response.addHeader(HEADER_RESET, resetTime.toString())
 
-        return if (currentCount > properties.burst) {
-            exchange.response.statusCode = HttpStatus.TOO_MANY_REQUESTS
-            exchange.response.setComplete()
-        } else {
-            chain.filter(exchange)
+        if (currentCount > properties.burst) {
+            response.status = HttpStatus.TOO_MANY_REQUESTS.value()
+            return
         }
+
+        filterChain.doFilter(request, response)
     }
 
     private data class RequestCounter(
