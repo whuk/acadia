@@ -1,5 +1,6 @@
 package me.ryan.acadia.config
 
+import me.ryan.acadia.common.GatewayPaths
 import org.springframework.boot.context.properties.ConfigurationProperties
 import org.springframework.http.HttpMethod
 import org.springframework.http.HttpStatus
@@ -17,6 +18,9 @@ data class GatewayProperties(
         val hasPublicPath: Boolean = false,
         val swaggerEnabled: Boolean = true,
         val swaggerGroups: List<String> = emptyList(),
+        // Downstream OpenAPI docs path. Defaults to the springdoc convention; set to e.g.
+        // "/openapi.json" for non-springdoc backends (FastAPI) so their docs can be aggregated.
+        val docsPath: String = GatewayPaths.SWAGGER_DOCS,
     )
 
     data class RetryConfig(
