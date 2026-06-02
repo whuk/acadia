@@ -1,31 +1,21 @@
-# B3 Trace Propagation Plan (B1)
+# FileLogStorage 효율 개선 Plan (B2)
 
-`gateway-observability.md §5` 개정에 따라 B3 트레이싱 헤더 처리를 수정한다.
-TraceId는 보존(연속성), SpanId는 hop별 생성 + 부모 연결, 인입 헤더는 형식 검증 후 신뢰한다.
+`FileLogStorage`가 `store()` 호출마다 `mkdirs()` + `FileWriter` open/append/close 하는 비효율을 제거한다.
+규칙(`gateway-observability.md §1`)은 가상 스레드 위 블로킹 file I/O를 허용하므로 비동기로 바꾸지 않고,
+**단일 BufferedWriter 재사용 + mkdirs 1회 + 동시성 안전 + 종료 시 close + 라인당 flush**로 개선한다.
 
-> 진행: "go" 시 체크되지 않은 첫 테스트를 구현하고, 그 테스트만 통과시키는 최소 코드를 작성한다.
-> 통합 테스트는 `@SpringBootTest`(RANDOM_PORT) + WireMock으로 백엔드 수신 헤더를 검증한다.
+> 성격: 동작 보존 성능 **리팩터링**. RED-드라이버보다 특성화/가드 테스트로 동작 보존을 검증한다(CLAUDE.md: 리팩터링 전후 테스트 통과 확인).
+> 기존 `CompositeLogStorageTest`는 `FileLogStorage`를 mock하므로 영향 없음. FileLogStorage 직접 검증 테스트는 신규 작성.
 
-## 규칙 개정 (완료)
+## 1. 특성화/가드 테스트 (현재 구현에서 green 확인 후 리팩터링)
 
-- [x] `gateway-observability.md §5` 개정: TraceId 보존, SpanId 부모 연결, 형식 검증. §6 금지 패턴 보강
+- [x] writesEntriesAsJsonLinesCreatingParentDirs — 부모 디렉토리 생성 + JSON 라인 추가 (`FileLogStorageTest`, baseline green)
+- [x] concurrentWritesPreserveAllLines — 16스레드×50라인 동시 store 시 800라인 모두 정상 JSON (공유 writer 동시성 가드)
 
-## 1. 형식 검증 헬퍼
+## 2. 리팩터링 (테스트 green 유지)
 
-- [x] shouldValidateB3TraceIdAndSpanId — `B3Ids.isValidTraceId`(16/32 hex), `isValidSpanId`(16 hex), 소문자 hex만 (`B3IdsTest`)
-
-## 2. TraceId 보존/생성
-
-- [x] shouldPreserveValidInboundTraceId — 유효 인입 `X-B3-TraceId` 그대로 전달 (`B3TraceIdPropagationTest`). 원복 시 RED 확인
-- [x] shouldRegenerateInvalidInboundTraceId — 부적합 인입은 hex 새 값으로 대체
-
-> 인입 없음 → 생성은 기존 `TraceIdPropagationTest`(전달·형식)가 커버한다.
-
-## 3. SpanId 생성 + 부모 연결
-
-- [x] shouldAlwaysGenerateNewSpanId — 인입 SpanId가 있어도 새 SpanId 전달(`B3SpanIdPropagationTest`)
-- [x] shouldSetParentSpanIdFromValidInboundSpanId — 유효 인입 SpanId → `X-B3-ParentSpanId`
-- [x] shouldStripParentSpanIdWhenNoValidInboundSpan — 유효 인입 SpanId 없으면 클라이언트 주입 ParentSpanId 제거(strip-then-set)
+- [x] reuseBufferedWriterAndMkdirsOnce — 단일 BufferedWriter lazy 오픈·재사용, mkdirs 1회, `store()` 동기화 + 라인당 flush, `DisposableBean.destroy()`로 종료 시 close. 특성화 테스트 green 유지
+- [x] closeReleasesFileHandle — `destroy()` 후 재기록 시 핸들 재오픈되어 append 이어짐
 
 ## 작업 규율 (CLAUDE.md)
-- 구조적/동작 변경 분리, 매 단계 전체 테스트 실행, 사용자 요청 전 자동 커밋 금지.
+- 리팩터링 전후 전체 테스트 통과 확인. 사용자 요청 전 자동 커밋 금지.
