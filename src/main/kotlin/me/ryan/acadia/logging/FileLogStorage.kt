@@ -30,8 +30,6 @@ class FileLogStorage(
         } catch (e: Exception) {
             logger.error("Failed to write log to file: ${e.message}", e)
         }
-
-        // Also log to console
-        logger.info(jsonLine)
+        // Console output is handled by CompositeLogStorage to avoid duplicate logging.
     }
 }

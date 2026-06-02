@@ -15,7 +15,6 @@ data class LoggingProperties(
     enum class StorageType {
         NONE,
         FILE,
-        DB,
     }
 
     data class FileProperties(
