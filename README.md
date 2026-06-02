@@ -64,12 +64,20 @@ gateway:
       strip-prefix: 1
       has-public-path: true    # /api/public/** 인증 제외
       swagger-enabled: true    # Swagger UI에 표시
+      docs-path: /v3/api-docs  # 다운스트림 OpenAPI 문서 경로 (기본값)
     - name: order-service
       path: /api/orders/**
       url: http://localhost:8082
       strip-prefix: 1
       has-public-path: false
+    - name: fastapi-service       # 비-springdoc 백엔드 예시
+      path: /api/v1/**
+      url: http://localhost:8000
+      strip-prefix: 1
+      docs-path: /openapi.json    # FastAPI는 /openapi.json에 문서 서빙
 ```
+
+**`docs-path`** (기본값 `/v3/api-docs`): Swagger 통합 시 게이트웨이가 백엔드 OpenAPI 문서를 가져오는 경로입니다. springdoc 백엔드는 기본값을 그대로 쓰고, FastAPI처럼 `/openapi.json`에 문서를 서빙하는 **비-springdoc 백엔드**는 `docs-path: /openapi.json`으로 설정합니다. 그러면 `/v3/api-docs/{service}` 요청이 해당 경로로 프록시되어 Swagger UI 드롭다운에 정상 통합됩니다.
 
 ### JWT 인증
 
@@ -203,11 +211,23 @@ spring:
   cloud:
     gateway:
       server:
-        webflux:
+        webmvc:
           httpclient:
             connect-timeout: 1000    # 연결 타임아웃 (ms)
-            response-timeout: 3s     # 응답 타임아웃
+            read-timeout: 3s         # 읽기(유휴) 타임아웃
 ```
+
+- **connect-timeout**: 백엔드 연결 수립 제한 시간. 연결 실패(거부/타임아웃)는 `502`로 매핑됩니다.
+- **read-timeout**: 읽기 간 **유휴(idle)** 타임아웃입니다. 데이터가 흐르는 동안에는 만료되지 않고, 백엔드가 응답을 멈추면(데이터 없음) `504`로 매핑됩니다. 이 유휴 의미 덕분에 SSE 같은 장시간 스트림이 유지됩니다(아래 *프록시 클라이언트* 참조).
+
+### 프록시 클라이언트
+
+게이트웨이는 다운스트림 호출에 **Apache HttpComponents(HTTP/1.1)** 클라이언트를 사용합니다(`GatewayHttpClientConfig`).
+
+- **HTTP/1.1 고정**: JDK 기본 HttpClient(HTTP/2)는 cleartext 연결에서 h2c 업그레이드(`Upgrade: h2c`, `HTTP2-Settings`)를 시도합니다. uvicorn/h11 같은 **엄격한 HTTP/1.1 백엔드**는 바디 있는 요청(POST/PUT/PATCH)을 `400`으로 거부합니다. HttpComponents는 평문 HTTP/1.1로 통신하고 **응답 헤더 케이스를 보존**합니다.
+- **스트리밍(SSE) 지원**: `read-timeout`이 읽기 간 유휴 타임아웃이라 `text/event-stream` 같은 장시간 스트림이 데이터가 계속 흐르는 한 취소되지 않습니다.
+
+> 응답 바디 로깅(`include-body: true`)은 응답을 버퍼링하므로 SSE 실시간성이 깨집니다. 스트리밍 백엔드를 프록시할 때는 기본값(`false`)으로 두세요.
 
 ## API 엔드포인트
 
@@ -225,7 +245,7 @@ spring:
 |-----------|------|
 | `GET /swagger-ui.html` | Swagger UI |
 | `GET /v3/api-docs` | Gateway OpenAPI 스펙 |
-| `GET /v3/api-docs/{service}` | 서비스별 API 문서 |
+| `GET /v3/api-docs/{service}` | 서비스별 API 문서 (백엔드의 `docs-path`로 프록시) |
 
 ## 응답 코드
 
@@ -233,9 +253,9 @@ spring:
 |-----|------|
 | `401 Unauthorized` | JWT 토큰 없음/유효하지 않음/만료됨 |
 | `429 Too Many Requests` | Rate Limit 초과 |
-| `502 Bad Gateway` | 백엔드 5xx 오류 |
+| `502 Bad Gateway` | 백엔드 5xx 오류 또는 연결 실패(거부/connect 타임아웃) |
 | `503 Service Unavailable` | Circuit Breaker 열림 |
-| `504 Gateway Timeout` | 백엔드 타임아웃 |
+| `504 Gateway Timeout` | 백엔드 응답(read) 타임아웃 |
 
 ## 요청 헤더
 
@@ -256,7 +276,8 @@ src/main/kotlin/me/ryan/acadia/
 ├── AcadiaApplication.kt          # 메인 애플리케이션
 ├── config/                       # 설정 클래스
 │   ├── GatewayConfig.kt          # 라우팅 설정
-│   ├── GatewayProperties.kt      # 서비스 프로퍼티
+│   ├── GatewayProperties.kt      # 서비스 프로퍼티 (docs-path 등)
+│   ├── GatewayHttpClientConfig.kt # 프록시 클라이언트 (Apache HttpComponents, HTTP/1.1)
 │   ├── JwtProperties.kt          # JWT 프로퍼티
 │   ├── CorsConfig.kt             # CORS 설정
 │   ├── RateLimitProperties.kt    # Rate Limit 프로퍼티
