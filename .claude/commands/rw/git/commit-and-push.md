@@ -1,6 +1,10 @@
 ---
-argument-hint: "새 브랜치명 (선택). 입력 시 해당 이름으로 브랜치를 만들고 거기에 commit/push 합니다."
+description: "현재 작업 디렉토리의 변경사항을 의미 있는 단위로 commit 하고 remote 에 push 한다. PR 생성·머지는 수행하지 않는다."
+argument-hint: "새로 만들 브랜치명 (영어 소문자·숫자·하이픈·슬래시, 선택). 입력 시 해당 이름으로 브랜치를 만들고 거기에 commit/push 합니다."
+user-invocable: true
 ---
+
+# /rw:git:commit-and-push — 변경사항 커밋 및 push
 
 현재 작업 디렉토리의 변경사항을 의미 있는 단위로 commit 하고 remote 에 push 합니다. PR 생성·머지는 수행하지 않습니다. 보호 브랜치(`main`, `master`, `develop`, `dev`)에서 직접 작업 중인 경우 새 브랜치로 분기할지 사용자에게 확인합니다.
 
@@ -22,7 +26,7 @@ argument-hint: "새 브랜치명 (선택). 입력 시 해당 이름으로 브랜
 
 1. 입력값에서 양쪽 공백을 제거합니다. 한국어·공백·특수문자가 포함되면 다음 메시지를 출력하고 **중단**하세요:
    > 브랜치명은 영어 소문자·숫자·하이픈(`-`)·슬래시(`/`)만 사용할 수 있습니다.
-2. 동일 이름 브랜치가 이미 존재하는지 확인하세요(`git rev-parse --verify <브랜치명>`).
+2. 동일 이름 브랜치가 이미 존재하는지 확인하세요(`git rev-parse --verify refs/heads/<브랜치명>`). 레퍼런스 종류를 `refs/heads/`로 한정합니다 — 인자를 그냥 `<브랜치명>`으로 주면 같은 이름의 태그나 커밋 SHA에도 매칭되어, 브랜치가 없는데 있다고 오판합니다.
    - 존재하면 숫자 접미사(`-2`, `-3`, …)를 붙여 충돌이 없는 이름을 찾습니다. 변경된 이름을 사용자에게 알려줍니다.
 3. `git checkout -b <브랜치명>` 으로 새 브랜치를 생성한 뒤 4단계로 진행하세요.
 
@@ -45,8 +49,8 @@ argument-hint: "새 브랜치명 (선택). 입력 시 해당 이름으로 브랜
 2. 커밋 메시지 형식:
    - 첫 줄: 50자 내외, 동사 원형으로 시작, "왜"를 우선해 작성
    - 본문(필요 시): 한 줄 비우고 80자 폭으로 줄바꿈. 변경 동기와 영향을 1~3줄로 설명
-   - 마지막에 `Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>` trailer 포함
-3. 변경 범위가 크고 논리적으로 분리되는 경우 사용자에게 알리고 다중 커밋으로 분할할지 확인하세요. 기본은 단일 커밋입니다.
+   - 마지막에 `Co-Authored-By: <현재 실행 중인 Claude 모델명> <noreply@anthropic.com>` trailer 포함 (특정 버전을 고정 기재하지 않는다)
+3. 하나의 논리적 작업 단위이면 단일 커밋이 기본입니다. 단, 구조적 변경(이름 변경·메서드 추출 등 Tidy First)과 동작 변경이 한 diff에 혼재되어 있으면 CLAUDE.md의 커밋 규율에 따라 별도 커밋으로 분리하세요. 그 외에 변경 범위가 크고 논리적으로 분리되는 경우에도 사용자에게 알리고 다중 커밋으로 분할할지 확인하세요.
 
 ## 4단계: Staging + Commit 수행
 
@@ -56,33 +60,48 @@ argument-hint: "새 브랜치명 (선택). 입력 시 해당 이름으로 브랜
    - 작성한 커밋 메시지 전문
    - 경로 B-옵션 2로 진입했다면 "보호 브랜치 직접 push" 경고
 2. 확인되면 파일을 명시적으로 `git add <files...>` 합니다. `git add -A` / `git add .` 는 사용하지 마세요.
-3. 커밋 메시지는 HEREDOC 으로 전달합니다:
+3. **staging 직후, 커밋 전에 실제 스테이징 결과를 검증합니다.** 1단계 수집과 여기 사이에는 사용자 확인 대기가 끼어 있어, 그동안 편집기에서 저장된 내용까지 `git add`가 함께 담습니다 — 사용자가 승인한 diff와 커밋될 diff가 달라질 수 있습니다.
+   ```bash
+   git diff --cached --stat
+   ```
+   1단계에서 보여준 파일 목록·변경 규모와 다르면 커밋하지 말고, 달라진 부분을 사용자에게 보여준 뒤 다시 확인받으세요. 커밋 메시지가 더 이상 맞지 않으면 3단계로 돌아가 다시 작성합니다.
+4. 커밋 메시지는 HEREDOC 으로 전달합니다:
    ```bash
    git commit -m "$(cat <<'EOF'
    <subject>
 
    <body 옵션>
 
-   Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>
+   Co-Authored-By: <현재 실행 중인 Claude 모델명> <noreply@anthropic.com>
    EOF
    )"
    ```
-4. 커밋 실패 시(예: pre-commit 훅 위반) 원인을 진단하고 수정한 뒤 **새 커밋**을 만드세요. `--amend` 는 사용하지 마세요. `--no-verify` 는 사용자가 명시적으로 요청한 경우에만 사용하세요.
+5. 커밋 실패 시(예: pre-commit 훅 위반) 원인을 진단하고 수정한 뒤 **새 커밋**을 만드세요. `--amend` 는 사용하지 마세요. `--no-verify` 는 사용자가 명시적으로 요청한 경우에만 사용하세요.
 
 ## 5단계: Push 수행
 
 1. 현재 브랜치의 upstream 설정 여부를 확인하세요(`git rev-parse --abbrev-ref --symbolic-full-name @{u}` 가 실패하면 upstream 없음).
-   - upstream 이 없으면 `git push -u origin <브랜치명>` 으로 push + 추적 설정을 동시에 수행합니다.
-   - upstream 이 있으면 `git push` 만 수행합니다.
-2. push 가 거부된 경우(non-fast-forward 등) 강제 push 를 자동으로 시도하지 마세요. 원인을 사용자에게 보고하고 처리 방법을 확인받으세요.
-3. 보호 브랜치(`main`, `master`, `develop`, `dev`)에 push 하는 경우 절대 `--force` / `--force-with-lease` 를 사용하지 마세요. 사용자가 명시적으로 요청해도 위험을 한 번 더 경고하세요.
+   - upstream 이 있으면 `git push` 만 수행합니다. remote 는 upstream 설정에 이미 담겨 있습니다.
+   - upstream 이 없으면 2항으로 remote 이름을 먼저 확정한 뒤 `git push -u <remote> <브랜치명>` 으로 push + 추적 설정을 동시에 수행합니다.
+2. **remote 이름을 `origin` 으로 가정하지 마세요.** 저장소마다 이름이 다르고(fork 경유, 사내 미러 등) 여러 개일 수 있습니다. 다음 순서로 확정합니다:
+   ```bash
+   git remote                                   # 등록된 remote 목록
+   git config --get branch.{기본브랜치}.remote   # 기본 브랜치가 추적 중인 remote
+   ```
+   - remote 가 하나뿐이면 그 이름을 사용합니다.
+   - 여러 개면 기본 브랜치(`main`/`master` 등)가 추적 중인 remote 를 사용합니다.
+   - 그래도 판정이 안 되면 목록을 보여주고 사용자에게 확인받습니다. 임의로 고르지 마세요.
+3. push 가 인증 오류(`could not read Password`, `Repository not found` 등)로 실패하면 곧바로 재로그인을 요청하지 말고, `gh auth status` 로 활성 계정이 대상 저장소의 소유 계정과 일치하는지 먼저 확인하세요. 불일치면 `gh auth switch --user <계정>` 으로 전환한 뒤 한 번 재시도합니다. 그래도 실패하면 원인을 보고하고 중단하세요.
+4. push 가 거부된 경우(non-fast-forward 등) 강제 push 를 자동으로 시도하지 마세요. 원인을 사용자에게 보고하고 처리 방법을 확인받으세요.
+5. 보호 브랜치(`main`, `master`, `develop`, `dev`)에 push 하는 경우 절대 `--force` / `--force-with-lease` 를 사용하지 마세요. 사용자가 명시적으로 요청해도 위험을 한 번 더 경고하세요.
 
-## 6단계: 결과 보고
+## 결과 보고
 
 다음을 간결하게 보고하세요:
 
 - 사용된 경로 (A: argument 브랜치 / B-1: 새 분기 / B-2: 보호 브랜치 직접 / C: 일반 브랜치)
-- 최종 브랜치명과 upstream
+- 최종 브랜치명과 upstream (remote 이름 포함. 5단계 2항에서 여러 후보 중 골랐다면 그 근거도)
+- 인증 오류로 계정을 전환했다면(5단계 3항) 그 사실 — 활성 계정이 바뀐 채로 남으므로 사용자가 알아야 한다
 - 생성된 커밋 SHA(짧은 해시)와 subject
 - push 결과(범위 갱신 또는 새 브랜치 생성 여부)
 
@@ -91,11 +110,12 @@ argument-hint: "새 브랜치명 (선택). 입력 시 해당 이름으로 브랜
 - PR 생성·머지 수행하기 (이 커맨드의 범위가 아님 — 필요 시 `/commit-commands:commit-push-pr` 또는 `/rw:git:squash-merge-pull` 사용 안내)
 - 사용자 확인 없이 커밋·push 수행하기
 - `git add -A` / `git add .` 로 무차별 staging
+- staging 후 `git diff --cached`로 실제 커밋 내용을 검증하지 않고 곧바로 커밋하기 (확인 대기 중 저장된 변경이 승인 없이 섞여 들어간다)
 - `.env` 등 민감 파일을 경고 없이 commit 하기
+- remote 이름을 `origin` 으로 가정하고 push 하기 (5단계 2항으로 실제 이름을 확정한다)
+- 인증 오류가 나자마자 사용자에게 재로그인을 요청하기 (5단계 3항의 활성 계정 확인·전환을 먼저 시도한다)
 - 보호 브랜치에 `--force` / `--force-with-lease` 사용하기
 - 커밋 실패 시 `--amend` 로 이전 커밋 덮어쓰기
 - `--no-verify` / `--no-gpg-sign` 등 안전장치 우회 (사용자 명시 요청 시 한정)
 - 변경사항이 없는데 빈 커밋 만들기
 - 현재 브랜치에 commit 후 다른 브랜치로 checkout 하여 push 하기 (요청 흐름 외 부수 작업 금지)
-
-$ARGUMENTS - 선택 사항: 새로 만들 브랜치명 (영어 소문자·숫자·하이픈·슬래시). 입력 시 해당 이름으로 분기 후 commit/push 합니다.
