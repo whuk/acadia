@@ -1,6 +1,8 @@
 package me.ryan.acadia.config
 
+import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry
 import me.ryan.acadia.common.GatewayPaths
+import org.springframework.boot.ApplicationRunner
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.cloud.gateway.server.mvc.filter.BeforeFilterFunctions.rewritePath
 import org.springframework.cloud.gateway.server.mvc.filter.BeforeFilterFunctions.setPath
@@ -24,7 +26,7 @@ class GatewayConfig(
     private val props: GatewayProperties,
 ) {
     companion object {
-        const val CIRCUIT_BREAKER_NAME = "gatewayCircuitBreaker"
+        const val CIRCUIT_BREAKER_PREFIX = "cb-"
         private const val SWAGGER_ROUTE_PREFIX = "swagger-"
         private const val PUBLIC_ROUTE_PREFIX = "public-"
     }
@@ -62,7 +64,7 @@ class GatewayConfig(
                         .route(path(publicPath), http())
                         .before(uri(service.url))
                         .before(stripPrefix(service.stripPrefix + 1))
-                        .filter(circuitBreaker { it.setId(CIRCUIT_BREAKER_NAME).setStatusCodes(SERVER_ERROR_CODE) })
+                        .filter(circuitBreaker { it.setId("$CIRCUIT_BREAKER_PREFIX${service.name}").setStatusCodes(SERVER_ERROR_CODE) })
                         .filter(
                             retry {
                                 it
@@ -79,7 +81,7 @@ class GatewayConfig(
                     .route(path(service.path), http())
                     .before(uri(service.url))
                     .before(stripPrefix(service.stripPrefix))
-                    .filter(circuitBreaker { it.setId(CIRCUIT_BREAKER_NAME).setStatusCodes(SERVER_ERROR_CODE) })
+                    .filter(circuitBreaker { it.setId("$CIRCUIT_BREAKER_PREFIX${service.name}").setStatusCodes(SERVER_ERROR_CODE) })
                     .filter(
                         retry {
                             it
@@ -95,6 +97,16 @@ class GatewayConfig(
         return routes.reduceOrNull { acc, r -> acc.and(r) }
             ?: RouterFunction<ServerResponse> { Optional.empty() }
     }
+
+    // Per-service instances are otherwise created lazily on first proxied call, which would
+    // leave circuit breaker metrics invisible until traffic arrives.
+    @Bean
+    fun circuitBreakerEagerInitializer(registry: CircuitBreakerRegistry): ApplicationRunner =
+        ApplicationRunner {
+            props.services.forEach { service ->
+                registry.circuitBreaker("$CIRCUIT_BREAKER_PREFIX${service.name}")
+            }
+        }
 }
 
 private const val SERVER_ERROR_CODE = "500"

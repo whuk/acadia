@@ -79,8 +79,11 @@ gateway:
 
 resilience4j:
   circuitbreaker:
-    instances:
-      gatewayCircuitBreaker:
+    # Per-service instances (cb-{service.name}) are created lazily with this default config,
+    # so adding a service needs no resilience4j entry. Override a single service with
+    # instances.cb-{service.name} if it ever needs different thresholds.
+    configs:
+      default:
         sliding-window-size: 10
         minimum-number-of-calls: 5
         failure-rate-threshold: 50
