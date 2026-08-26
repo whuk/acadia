@@ -161,11 +161,14 @@ spring:
 
 resilience4j:
   circuitbreaker:
-    instances:
-      user-service:
+    # 현재 구현: 서비스별 인스턴스(cb-{service.name})가 이 기본 설정으로 생성된다.
+    # 장애가 서비스 단위로 격리되며, 서비스 추가 시 resilience4j 설정이 필요 없다.
+    configs:
+      default:
         slidingWindowSize: 10
+        minimumNumberOfCalls: 5
         failureRateThreshold: 50
-        waitDurationInOpenState: 30s
+        waitDurationInOpenState: 60s
         permittedNumberOfCallsInHalfOpenState: 3
 ```
 

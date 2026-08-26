@@ -32,7 +32,7 @@ class GatewayErrorFormatTest {
             registry.add("gateway.services[0].path") { "/api/users/**" }
             registry.add("gateway.services[0].url") { "http://localhost:$deadPort" }
             registry.add("gateway.retry.retries") { 1 }
-            registry.add("resilience4j.circuitbreaker.instances.gatewayCircuitBreaker.minimum-number-of-calls") { 100 }
+            registry.add("resilience4j.circuitbreaker.configs.default.minimum-number-of-calls") { 100 }
         }
     }
 

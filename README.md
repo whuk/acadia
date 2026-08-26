@@ -180,16 +180,28 @@ gateway:
 
 ### Circuit Breaker
 
+서비스마다 독립된 서킷 브레이커 인스턴스(`cb-{service.name}`)가 아래 기본 설정으로 생성됩니다. 한 백엔드의 장애로 서킷이 열려도 다른 백엔드 호출은 영향을 받지 않으며, 같은 서비스의 인증/공개 라우트는 하나의 인스턴스를 공유합니다. 서비스를 추가해도 resilience4j 설정을 늘릴 필요가 없습니다.
+
 ```yaml
 resilience4j:
   circuitbreaker:
-    instances:
-      gatewayCircuitBreaker:
+    configs:
+      default:
         sliding-window-size: 10
         minimum-number-of-calls: 5
         failure-rate-threshold: 50     # 실패율 50% 초과 시 열림
         wait-duration-in-open-state: 60s
         permitted-number-of-calls-in-half-open-state: 3
+```
+
+특정 서비스만 다른 임계값이 필요하면 해당 인스턴스를 오버라이드합니다:
+
+```yaml
+resilience4j:
+  circuitbreaker:
+    instances:
+      cb-user-service:
+        failure-rate-threshold: 30
 ```
 
 ### Retry

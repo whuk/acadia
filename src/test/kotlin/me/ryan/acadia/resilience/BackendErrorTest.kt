@@ -33,7 +33,7 @@ class BackendErrorTest {
             // Disable retry for this test
             registry.add("gateway.retry.retries") { 1 }
             // Disable circuit breaker for this test (high minimum calls)
-            registry.add("resilience4j.circuitbreaker.instances.gatewayCircuitBreaker.minimum-number-of-calls") { 100 }
+            registry.add("resilience4j.circuitbreaker.configs.default.minimum-number-of-calls") { 100 }
         }
     }
 
