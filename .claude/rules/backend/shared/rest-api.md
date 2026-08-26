@@ -1,11 +1,17 @@
 ---
-description: REST API 설계 원칙 및 OpenAPI 스펙 작성 규칙
-alwaysApply: true
+description: REST API 설계(URI/메서드/상태 코드/페이지네이션/에러 응답) 및 OpenAPI 스펙 규약 (전 백엔드 스택 공통)
+paths:
+  - "**/openapi*.yaml"
+  - "**/openapi*.yml"
+  - "**/*Controller.java"
+  - "**/*Controller.kt"
+  - "**/*.controller.ts"
+  - "**/router.py"
 ---
 
 # REST API 설계 및 OpenAPI 스펙 작성 규칙
 
-REST API의 URI, HTTP 메서드, 상태 코드, 요청/응답 본문, 버전 관리 등 설계 규칙과 OpenAPI 스펙 작성 규칙을 정의한다. `api-dto.md`의 "openapi.yaml 먼저 작성 → 코드 생성" 흐름을 전제로 한다.
+REST API의 URI, HTTP 메서드, 상태 코드, 요청/응답 본문, 버전 관리 등 설계 규칙과 OpenAPI 스펙 규약을 정의한다. 백엔드 스택(Spring/NestJS/FastAPI)과 무관하게 동일하게 적용된다. 스펙과 코드의 동기화 방식만 스택별로 다르다: Spring은 spec-first(`spring/api-dto.md`), NestJS는 spec-first 우선(`nestjs.md` 7번), FastAPI는 code-first(`fastapi.md` 6번).
 
 ## 1. URI 설계
 
@@ -29,7 +35,7 @@ REST API의 URI, HTTP 메서드, 상태 코드, 요청/응답 본문, 버전 관
 ## 3. HTTP 상태 코드
 
 - **200 OK**: 조회, 수정, 삭제 성공 시 기본 응답.
-- **201 Created**: 리소스 생성 성공. 반드시 `Location` 헤더에 생성된 리소스의 URI를 포함한다. Controller가 Service로부터 반환받은 ID를 사용하여 `Location` 헤더 URI를 조립한다.
+- **201 Created**: 리소스 생성 성공. 반드시 `Location` 헤더에 생성된 리소스의 URI를 포함한다. Controller/Handler가 Service로부터 반환받은 ID를 사용하여 `Location` 헤더 URI를 조립한다.
 - **204 No Content**: 성공했으나 응답 본문이 없는 경우 (DELETE, 일부 PUT/PATCH).
 - **400 Bad Request**: 요청 구문 오류, 필수 필드 누락 등 클라이언트의 형식적 오류.
 - **401 Unauthorized**: 인증 실패.
@@ -52,7 +58,7 @@ REST API의 URI, HTTP 메서드, 상태 코드, 요청/응답 본문, 버전 관
     "instance": "/orders/12345"
   }
   ```
-- Bean Validation 등 필드별 검증 오류 시, `errors` 배열을 추가하여 개별 필드 오류를 반환한다:
+- 필드별 검증 오류 시(Bean Validation, class-validator, Pydantic 등 스택 무관), `errors` 배열을 추가하여 개별 필드 오류를 반환한다:
   ```json
   {
     "type": "about:blank",
@@ -119,6 +125,7 @@ REST API의 URI, HTTP 메서드, 상태 코드, 요청/응답 본문, 버전 관
 
 ## 8. OpenAPI 스펙 작성
 
+- spec-first 스택(Spring, NestJS)은 이 규칙대로 `openapi.yaml`을 직접 작성한다. code-first인 FastAPI는 자동 생성된 `/openapi.json`이 이 규칙(명명, 예시, 제약조건 명시)을 충족하도록 Pydantic 모델과 라우터 코드를 작성한다(`fastapi.md` 6번).
 - 스키마(모델) 이름은 **PascalCase**를 사용한다 (예: `OrderResponse`, `CreateUserRequest`).
 - 재사용 가능한 스키마는 반드시 `components/schemas`에 전역 정의하고 `$ref`로 참조한다. 인라인 스키마 정의를 최소화한다.
 - 공통 필드를 가진 스키마는 `allOf`를 사용하여 합성한다.
@@ -126,3 +133,14 @@ REST API의 URI, HTTP 메서드, 상태 코드, 요청/응답 본문, 버전 관
 - 요청/응답 예시(`example` 또는 `examples`)를 포함하여 스펙만으로 API 동작을 이해할 수 있도록 한다.
 - 별도 정의가 없는 한 스펙 파일이 500줄을 초과하면 도메인별로 분할하고 `$ref`로 연결한다.
 - 이 규칙에서 정의한 페이지네이션 응답 구조, Problem Details 에러 응답 등 공통 패턴은 `components/schemas`에 한 번 정의하고 재사용한다.
+- 필드 제약조건은 스펙 단계에서 명시한다: 필수 여부(`required`), 길이(`minLength`/`maxLength`), 패턴(`pattern`), 범위(`minimum`/`maximum`), 형식(`format: email`, `format: date-time` 등). 코드 생성 시 각 스택의 검증 규칙(Bean Validation 애노테이션, class-validator 데코레이터 등)으로 변환되는 근거가 된다 (Spring: `api-dto.md` 3번 참조).
+- 제너레이터가 `format`을 특정 검증 규칙(`@Email` 등)으로 자동 변환하지 못하는 경우, `pattern`으로 정규식을 직접 명시하여 보완한다.
+
+## 9. 금지 패턴
+
+- URI에 동사를 포함하지 않는다. 행위는 HTTP 메서드로 표현한다.
+- URI에 trailing slash를 사용하지 않는다.
+- URI에 파일 확장자를 포함하지 않는다.
+- 부분 수정에 PUT을 사용하지 않는다. PATCH를 사용한다.
+- 응답에 불필요한 envelope 래퍼 객체(`{ "data": ... }` 등)를 사용하지 않는다.
+- 400(구문 오류)과 422(비즈니스 규칙 위반)를 혼용하지 않는다.
